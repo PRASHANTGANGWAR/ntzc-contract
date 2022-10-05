@@ -26,7 +26,6 @@ contract Escrow is
         address buyer;
         uint256 price;
         uint256 fee;
-        uint256 timestamp;
         bool registered;
         bool confirmed;
         bool paid;
