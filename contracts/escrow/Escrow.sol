@@ -4,11 +4,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../lib/TransferHelper.sol";
 
-contract Escrow is
-    Initializable,
-    OwnableUpgradeable
-{
-    uint256 public PERIOD_FOR_RESOLVE = 259200;
+contract Escrow is Initializable, OwnableUpgradeable {
+    uint256 public PERIOD_FOR_RESOLVE;
     uint256 public tradesCounter;
     address public auzToken;
     address public auzWallet;
@@ -20,7 +17,6 @@ contract Escrow is
     struct Trade {
         string tradeId;
         bytes tradeHash;
-        address token;
         address seller;
         address buyer;
         uint256 price;
@@ -44,7 +40,9 @@ contract Escrow is
     event TradeFinished(string tradeId);
     event TradeResolved(string tradeId, bool result, string reason);
 
-    receive() external payable {}
+    receive() external payable {
+        revert("Escrow: Contract cannot work with ETH");
+    }
 
     function initialize(address _auzToken, address _auzWallet)
         public
@@ -54,6 +52,17 @@ contract Escrow is
         managers[msg.sender] = true;
         auzToken = _auzToken;
         auzWallet = _auzWallet;
+        PERIOD_FOR_RESOLVE = 259200;
+    }
+
+    function changeManager(address _manager, bool _isManager) external onlyOwner {
+        require(_manager != address(0), "Escrow: Zero address is not allowed");
+        managers[_manager] = _isManager;
+    }
+
+    function changeWallet(address _wallet) external onlyOwner {
+        require(_wallet != address(0), "Escrow: Zero address is not allowed");
+        auzWallet = _wallet;
     }
 
     function registerTrade(
@@ -80,7 +89,14 @@ contract Escrow is
         trade.fee = _fee;
         trade.timestamp = block.timestamp;
 
-        emit TradeRegistered (_tradeId, _tradeHash, _seller, _buyer, _price, _fee);
+        emit TradeRegistered(
+            _tradeId,
+            _tradeHash,
+            _seller,
+            _buyer,
+            _price,
+            _fee
+        );
     }
 
     function payTrade(string memory _tradeId) external {
@@ -96,7 +112,7 @@ contract Escrow is
         );
         trade.paid = true;
 
-        emit TradePaid (_tradeId, trade.price + trade.fee);
+        emit TradePaid(_tradeId, trade.price + trade.fee);
     }
 
     function approveTrade(string memory _tradeId) external {
@@ -106,7 +122,7 @@ contract Escrow is
         require(trade.paid, "Escrow: Trade is not paid");
         trade.approved = true;
 
-        emit TradeApproved (_tradeId);
+        emit TradeApproved(_tradeId);
     }
 
     function finishTrade(string memory _tradeId) external {
@@ -119,24 +135,62 @@ contract Escrow is
         TransferHelper.safeTransfer(auzToken, auzWallet, trade.fee);
         trade.finished = true;
 
-        emit TradeFinished (_tradeId);
+        emit TradeFinished(_tradeId);
     }
 
-    function resolveTrade(string memory _tradeId, bool _result, string memory _reason) external {
+    function resolveTrade(
+        string memory _tradeId,
+        bool _result,
+        string memory _reason
+    ) external {
         require(managers[msg.sender] == true, "Escrow: Action is not allowed");
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
         require(!trade.finished, "Escrow: Trade is finished");
-        require(block.timestamp >= trade.timestamp + PERIOD_FOR_RESOLVE, "Escrow: To early to resolve");
-        
+        require(
+            block.timestamp >= trade.timestamp + PERIOD_FOR_RESOLVE,
+            "Escrow: To early to resolve"
+        );
+
         if (_result) {
             TransferHelper.safeTransfer(auzToken, trade.seller, trade.price);
             TransferHelper.safeTransfer(auzToken, auzWallet, trade.fee);
         } else {
-             TransferHelper.safeTransfer(auzToken, trade.buyer, trade.price + trade.fee);
+            TransferHelper.safeTransfer(
+                auzToken,
+                trade.buyer,
+                trade.price + trade.fee
+            );
         }
         trade.finished = true;
 
-        emit TradeResolved (_tradeId, _result, _reason);
+        emit TradeResolved(_tradeId, _result, _reason);
+    }
+
+    function getTrade(string memory _tradeId)
+        external
+        view
+        returns (
+            bytes memory tradeHash,
+            address seller,
+            address buyer,
+            uint256 price,
+            uint256 fee,
+            uint256 timestamp,
+            bool paid,
+            bool approved,
+            bool finished
+        )
+    {
+        Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
+        tradeHash = trade.tradeHash;
+        seller = trade.seller;
+        buyer = trade.buyer;
+        price = trade.price;
+        fee = trade.fee;
+        timestamp = trade.timestamp;
+        paid = trade.paid;
+        approved = trade.approved;
+        finished = trade.finished;
     }
 }
