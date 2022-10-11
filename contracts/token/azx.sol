@@ -18,16 +18,16 @@ contract AUZToken is Ownable, ERC20 {
     using Address for address;
 
     //event
-    event CommissionUpdate(
-        uint256 _percent,
-        string _data
+    event CommissionUpdate(uint256 _percent, string _data);
+    event TransferPreSigned(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _networkFee
     );
-    event TransferPreSigned(address _from, address _to, uint256 _value, uint256 _networkFee);
 
-    //public variables
-    IERC20 private backedTokenContract;
-
-    //private variables
+    uint256 public mintingProofsCounter;
+    uint256 public burningProofsCounter;
     uint8 private decimal = 8;
     bool private migrated;
     bool private paused;
@@ -35,7 +35,7 @@ contract AUZToken is Ownable, ERC20 {
     // These variable help to calculate the commissions on each token transfer transcation
     uint256 public MINT_FEE_PERCENT = 25; // commission percentage on minting 0.025%
     uint256 public TRANSFER_FEE_PERCENT = 1; // commission percentage on transfer 0.001%
-    uint256 public PERCENT_COEFICIENT = 100000; // denominator for percentage calculation. 100000 = 100%, minimum value is 0.001%. 
+    uint256 public PERCENT_COEFICIENT = 100000; // denominator for percentage calculation. 100000 = 100%, minimum value is 0.001%.
 
     // Minter address
     address public minter;
@@ -46,17 +46,17 @@ contract AUZToken is Ownable, ERC20 {
     // Tokens minted in this wallet
     address public sellingWallet;
 
+    //Proofs for gold mints
+    mapping(uint256 => string) public mintingProofs;
+
+    //Proofs for gold burns
+    mapping(uint256 => string) public burningProofs;
+
     constructor(
-        address _goldTokenAddress,
         address _sellingWallet,
         address _minter,
         address _feeWallet
-    )
-        isContractAddress(_goldTokenAddress)
-        onlyNonZeroAddress(_sellingWallet)
-        ERC20("AUZToken", "AUZ")
-    {
-        backedTokenContract = IERC20(_goldTokenAddress);
+    ) onlyNonZeroAddress(_sellingWallet) ERC20("AUZToken", "AUZ") {
         sellingWallet = _sellingWallet;
         minter = _minter;
         feeWallet = _feeWallet;
@@ -73,28 +73,17 @@ contract AUZToken is Ownable, ERC20 {
         _;
     }
 
-    modifier onlyTokenContract() {
-        require(
-            msg.sender == address(backedTokenContract),
-            "Only Token contract is allowed"
-        );
-        _;
-    }
-
     modifier isContractAddress(address _addressContract) {
-        require(
-            _addressContract.isContract(),
-            "Only contract is allowed"
-        );
+        require(_addressContract.isContract(), "Only contract is allowed");
         _;
     }
 
-    modifier onlyMinter {
+    modifier onlyMinter() {
         require(msg.sender == minter, "Only Minter is allowed");
         _;
     }
 
-    modifier isNotOPaused {
+    modifier isNotOPaused() {
         require(paused == false, "Operations paused");
         _;
     }
@@ -107,38 +96,27 @@ contract AUZToken is Ownable, ERC20 {
      * @notice transfer tokens from contract
      * @dev Only owner can call, tokens will be transferred and equivalent amount of ZToken will be burnt.
      * @param _amount the amount of tokens to be transferred
-     * @param _receiver address of the receiver
 
      */
-    function transferToken(uint256 _amount, address _receiver)
-        external
-        onlyOwner
-        onlyNonZeroAddress(_receiver)
-        isNotOPaused
-    {
-        require(
-            backedTokenContract.balanceOf(address(this)) >= _amount,
-            "Insufficient balance of token"
-        );
-        backedTokenContract.transfer(_receiver, _amount);
+    function burnGold(uint256 _amount, string[] memory _hashes) external onlyMinter isNotOPaused {
+        for (uint256 i = 0; i < _hashes.length; i++) {
+            burningProofs[burningProofsCounter] = _hashes[i];
+            burningProofsCounter++;
+        }
         _burn(msg.sender, _amount);
     }
 
     /**
-     * @notice Minting of Ztokens backed by gold tokens
+     * @notice Minting of AUZtokens backed by gold tokens
      * @param _value The amount transferred
      */
-    function mintGold(uint256 _value
-    ) public
-    onlyMinter
-    isNotOPaused
-    {
-        uint256 balanceBefore = backedTokenContract.balanceOf(address(this));
-        require(backedTokenContract.transferFrom(msg.sender, address(this), _value), "Transfer failed");
-        uint256 balanceAfter = backedTokenContract.balanceOf(address(this));
-        require(balanceAfter - balanceBefore == _value, "Minting failed");
+    function mintGold(uint256 _value, string[] memory _hashes) public onlyMinter isNotOPaused {
         uint256 fee = calculateCommissionMint(_value);
         if (fee > 0) _mint(feeWallet, fee);
+        for (uint256 i = 0; i < _hashes.length; i++) {
+            mintingProofs[mintingProofsCounter] = _hashes[i];
+            mintingProofsCounter++;
+        }
         _mint(sellingWallet, _value - fee);
     }
 
@@ -148,7 +126,6 @@ contract AUZToken is Ownable, ERC20 {
     function decimals() public view virtual override returns (uint8) {
         return decimal;
     }
-
 
     /**
      * @notice Standard transfer function to Transfer token
@@ -174,52 +151,29 @@ contract AUZToken is Ownable, ERC20 {
      * @param sender transfer token from account
      * @param amount The amount to be transferred
      */
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public
-        virtual
-        override
-        isNotOPaused
-        returns (bool)
-    {
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public virtual override isNotOPaused returns (bool) {
         uint256 currentAllowance = allowance(sender, _msgSender());
-        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
+        require(
+            currentAllowance >= amount,
+            "ERC20: transfer amount exceeds allowance"
+        );
         _approve(sender, _msgSender(), currentAllowance - amount);
         privateTransfer(sender, recipient, amount);
         return true;
     }
 
     /**
-     * @notice Backed token contract migration function
-     * @dev Replaces old tokens by the new one, can be called only once,
-     * old tokens receiver is the contract owner, new tokens supplier is the contract owner
-     * @param _newGoldAddress New backed contract address
+     * @notice Private method to pause or unpause token operations
+     * @param _value Bool variable that indicates the contract state
      */
-    function migrateGoldToken(address _newGoldAddress) public
-    onlyOwner
-    isContractAddress(_newGoldAddress)
-    onlyNonZeroAddress(_newGoldAddress)
-    returns(bool) {
-        require(migrated == false, "Token already migrated");
-        require(_newGoldAddress != address(backedTokenContract), "Same address is not allowed");
-        uint256 balance = backedTokenContract.balanceOf(address(this));
-        backedTokenContract.transfer(owner(), balance);
-        backedTokenContract = IERC20(_newGoldAddress);
-        backedTokenContract.transferFrom(owner(), address(this), balance);
-        require(balance == backedTokenContract.balanceOf(address(this)), "Migration: operation error");
-        migrated = true;
-        paused = false;
-        return true;
-    }
-
-    /**
-    * @notice Private method to pause or unpause token operations
-    * @param _value Bool variable that indicates the contract state
-    */
-    function pauseTransfers(bool _value) public onlyOwner returns(bool) {
+    function pauseTransfers(bool _value) public onlyOwner returns (bool) {
         paused = _value;
         return true;
     }
-
 
     /**
      * @notice Internal method to handle transfer logic
@@ -229,18 +183,17 @@ contract AUZToken is Ownable, ERC20 {
      * @param _amount amount of tokens to be transferred
      * @return bool
      */
-    function privateTransfer(address _from, address _recipient, uint256 _amount)
-        internal
-        onlyNonZeroAddress(_recipient)
-        returns (bool)
-    {
+    function privateTransfer(
+        address _from,
+        address _recipient,
+        uint256 _amount
+    ) internal onlyNonZeroAddress(_recipient) returns (bool) {
         uint256 fee = calculateCommissionTransfer(_amount);
 
         if (fee > 0) _transfer(_from, feeWallet, fee);
         _transfer(_from, _recipient, _amount - fee);
         return true;
     }
-
 
     /**
      * @notice check Minting fee
@@ -253,7 +206,7 @@ contract AUZToken is Ownable, ERC20 {
         view
         returns (uint256)
     {
-        return _amount * MINT_FEE_PERCENT / PERCENT_COEFICIENT;
+        return (_amount * MINT_FEE_PERCENT) / PERCENT_COEFICIENT;
     }
 
     /**
@@ -267,7 +220,7 @@ contract AUZToken is Ownable, ERC20 {
         view
         returns (uint256)
     {
-        return _amount * TRANSFER_FEE_PERCENT / PERCENT_COEFICIENT;
+        return (_amount * TRANSFER_FEE_PERCENT) / PERCENT_COEFICIENT;
     }
 
     /**
@@ -276,7 +229,10 @@ contract AUZToken is Ownable, ERC20 {
      * @param _mintFeePercent The comission percent
      */
     function updateCommissionMint(uint256 _mintFeePercent) public onlyOwner {
-        require(_mintFeePercent <= PERCENT_COEFICIENT, "Commission cannot be more than 100%");
+        require(
+            _mintFeePercent <= PERCENT_COEFICIENT,
+            "Commission cannot be more than 100%"
+        );
         MINT_FEE_PERCENT = _mintFeePercent;
         emit CommissionUpdate(MINT_FEE_PERCENT, "Minting commision");
     }
@@ -286,8 +242,14 @@ contract AUZToken is Ownable, ERC20 {
      * @dev Only owner can call
      * @param _transferFeePercent The comission percent
      */
-    function updateCommissionTransfer(uint256 _transferFeePercent) public onlyOwner {
-        require(_transferFeePercent <= PERCENT_COEFICIENT, "Commission cannot be more than 100%");
+    function updateCommissionTransfer(uint256 _transferFeePercent)
+        public
+        onlyOwner
+    {
+        require(
+            _transferFeePercent <= PERCENT_COEFICIENT,
+            "Commission cannot be more than 100%"
+        );
         TRANSFER_FEE_PERCENT = _transferFeePercent;
         emit CommissionUpdate(TRANSFER_FEE_PERCENT, "Transfer commision");
     }
@@ -302,7 +264,6 @@ contract AUZToken is Ownable, ERC20 {
         feeWallet = _feeWallet;
     }
 
-
     /**
      * @notice Prevents contract from accepting ETHs
      * @dev Contracts can still be sent ETH with self destruct. If anyone deliberately does that, the ETHs will be lost
@@ -310,8 +271,6 @@ contract AUZToken is Ownable, ERC20 {
     receive() external payable {
         revert("Contract does not accept ethers");
     }
-
-
 }
 
 /**
@@ -321,22 +280,24 @@ contract AUZToken is Ownable, ERC20 {
 contract AdvancedAUZToken is AUZToken {
     mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
 
-    bytes4 public methodWord_transfer = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public methodWord_approve = bytes4(keccak256("approve(address,uint256)"));
-    bytes4 public methodWord_increaseApproval = bytes4(keccak256("increaseAllowance(address,uint256)"));
-    bytes4 public methodWord_decreaseApproval = bytes4(keccak256("decreaseAllowance(address,uint256)"));
+    bytes4 public methodWord_transfer =
+        bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public methodWord_approve =
+        bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public methodWord_increaseApproval =
+        bytes4(keccak256("increaseAllowance(address,uint256)"));
+    bytes4 public methodWord_decreaseApproval =
+        bytes4(keccak256("decreaseAllowance(address,uint256)"));
 
     constructor(
-        address _goldTokenAddress,
         address _sellingWallet,
         address _minter,
         address _feeWallet
-    )  AUZToken( _goldTokenAddress, _sellingWallet, _minter, _feeWallet) {
-    }
+    ) AUZToken(_sellingWallet, _minter, _feeWallet) {}
 
     /**
-    * @dev ID of the executing chain
-    * @return uint value
+     * @dev ID of the executing chain
+     * @return uint value
      */
     function getChainID() public view returns (uint256) {
         uint256 id;
@@ -356,13 +317,17 @@ contract AdvancedAUZToken is AUZToken {
      * @param token The unique token for each delegated function
      * @return address Signer of message
      */
-    function preAuthValidations(bytes32 proof, bytes32 message, bytes32 token, bytes32 r, bytes32 s, uint8 v)
-        private
-        returns(address)
-    {
+    function preAuthValidations(
+        bytes32 proof,
+        bytes32 message,
+        bytes32 token,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) private returns (address) {
         address signer = getSigner(message, r, s, v);
-        require(signer != address(0),"Zero address not allowed");
-        require(!tokenUsed[signer][token],"Token already used");
+        require(signer != address(0), "Zero address not allowed");
+        require(!tokenUsed[signer][token], "Token already used");
         require(proof == message, "Invalid proof");
         tokenUsed[signer][token] = true;
         return signer;
@@ -376,18 +341,19 @@ contract AdvancedAUZToken is AUZToken {
      * @param v Signature component
      * @return address Signer of message
      */
-    function getSigner(bytes32 message, bytes32 r, bytes32 s, uint8 v)
-        public
-        pure
-        returns (address)
-    {
+    function getSigner(
+        bytes32 message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) public pure returns (address) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, message));
         address signer = ecrecover(prefixedHash, v, r, s);
         return signer;
     }
 
-     /**
+    /**
      * @notice Delegated transfer. Gas fee will be paid by relayer
      * @param message The message that user signed
      * @param r Signature component
@@ -399,10 +365,23 @@ contract AdvancedAUZToken is AUZToken {
      * @param amount The array of amounts to be transferred
      */
     function preAuthorizedTransfer(
-        bytes32 message, bytes32 r, bytes32 s, uint8 v, bytes32 token, uint256 networkFee, address to, uint256 amount)
-        public
-    {
-        bytes32 proof = getProofTransfer(methodWord_transfer, token, networkFee, msg.sender, to, amount);
+        bytes32 message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        bytes32 token,
+        uint256 networkFee,
+        address to,
+        uint256 amount
+    ) public {
+        bytes32 proof = getProofTransfer(
+            methodWord_transfer,
+            token,
+            networkFee,
+            msg.sender,
+            to,
+            amount
+        );
         address signer = preAuthValidations(proof, message, token, r, s, v);
 
         // Deduct network fee if broadcaster charges network fee
@@ -427,17 +406,32 @@ contract AdvancedAUZToken is AUZToken {
      * @return Bool value
      */
     function preAuthorizedApproval(
-        bytes4 methodHash, bytes32 message, bytes32 r, bytes32 s, uint8 v, bytes32 token, uint256 networkFee, address to, uint256 amount)
-        public
-        returns (bool)
-    {
-        bytes32 proof = getProofApproval (methodHash, token, networkFee, msg.sender, to, amount);
+        bytes4 methodHash,
+        bytes32 message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        bytes32 token,
+        uint256 networkFee,
+        address to,
+        uint256 amount
+    ) public returns (bool) {
+        bytes32 proof = getProofApproval(
+            methodHash,
+            token,
+            networkFee,
+            msg.sender,
+            to,
+            amount
+        );
         address signer = preAuthValidations(proof, message, token, r, s, v);
         uint256 currentAllowance = allowance(signer, _msgSender());
         // Perform approval
-        if(methodHash == methodWord_approve) _approve(signer, to, amount);
-        else if(methodHash == methodWord_increaseApproval) _approve(signer, to, currentAllowance + amount);
-        else if(methodHash == methodWord_decreaseApproval) _approve(signer, to, currentAllowance - amount);
+        if (methodHash == methodWord_approve) _approve(signer, to, amount);
+        else if (methodHash == methodWord_increaseApproval)
+            _approve(signer, to, currentAllowance + amount);
+        else if (methodHash == methodWord_decreaseApproval)
+            _approve(signer, to, currentAllowance - amount);
         return true;
     }
 
@@ -450,22 +444,27 @@ contract AdvancedAUZToken is AUZToken {
      * @param amount The amount to be transferred
      * @return Bool value
      */
-    function getProofTransfer(bytes4 methodHash, bytes32 token, uint256 networkFee, address broadcaster, address to, uint256 amount)
-        public
-        view
-        returns (bytes32)
-    {
+    function getProofTransfer(
+        bytes4 methodHash,
+        bytes32 token,
+        uint256 networkFee,
+        address broadcaster,
+        address to,
+        uint256 amount
+    ) public view returns (bytes32) {
         require(methodHash == methodWord_transfer, "Method not supported");
-        bytes32 proof = keccak256(abi.encodePacked(
-            getChainID(),
-            bytes4(methodHash),
-            address(this),
-            token,
-            networkFee,
-            broadcaster,
-            to,
-            amount
-    ));
+        bytes32 proof = keccak256(
+            abi.encodePacked(
+                getChainID(),
+                bytes4(methodHash),
+                address(this),
+                token,
+                networkFee,
+                broadcaster,
+                to,
+                amount
+            )
+        );
         return proof;
     }
 
@@ -478,27 +477,32 @@ contract AdvancedAUZToken is AUZToken {
      * @param amount The amount to be approved
      * @return Bool value
      */
-    function getProofApproval(bytes4 methodHash, bytes32 token, uint256 networkFee, address broadcaster, address to, uint256 amount)
-        public
-        view
-        returns (bytes32)
-    {
+    function getProofApproval(
+        bytes4 methodHash,
+        bytes32 token,
+        uint256 networkFee,
+        address broadcaster,
+        address to,
+        uint256 amount
+    ) public view returns (bytes32) {
         require(
             methodHash == methodWord_approve ||
-            methodHash == methodWord_increaseApproval ||
-            methodHash == methodWord_decreaseApproval,
-            "Method not supported");
-        bytes32 proof = keccak256(abi.encodePacked(
-            getChainID(),
-            bytes4(methodHash),
-            address(this),
-            token,
-            networkFee,
-            broadcaster,
-            to,
-            amount
-        ));
+                methodHash == methodWord_increaseApproval ||
+                methodHash == methodWord_decreaseApproval,
+            "Method not supported"
+        );
+        bytes32 proof = keccak256(
+            abi.encodePacked(
+                getChainID(),
+                bytes4(methodHash),
+                address(this),
+                token,
+                networkFee,
+                broadcaster,
+                to,
+                amount
+            )
+        );
         return proof;
     }
-
 }
