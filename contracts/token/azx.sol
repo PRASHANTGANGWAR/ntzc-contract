@@ -52,6 +52,9 @@ contract AUZToken is Ownable, ERC20 {
     //Proofs for gold burns
     mapping(uint256 => string) public burningProofs;
 
+    //Mapping of addresses of contracts that are allowed to transfer tokens
+    mapping(address => bool) public allowedContracts;
+
     constructor(
         address _sellingWallet,
         address _minter,
@@ -88,6 +91,16 @@ contract AUZToken is Ownable, ERC20 {
         _;
     }
 
+    modifier onlyAllowedContracts() {
+        require(
+            (address(msg.sender).isContract() &&
+                allowedContracts[msg.sender]) ||
+                !address(msg.sender).isContract(),
+            "Address: should be allowed"
+        );
+        _;
+    }
+
     ////////////////////////////////////////////////////////////////
     //                  Only Owner functions
     ////////////////////////////////////////////////////////////////
@@ -96,9 +109,13 @@ contract AUZToken is Ownable, ERC20 {
      * @notice transfer tokens from contract
      * @dev Only owner can call, tokens will be transferred and equivalent amount of ZToken will be burnt.
      * @param _amount the amount of tokens to be transferred
-
+     * @param _hashes The array of IPFS hashes of the gold burn proofs
      */
-    function burnGold(uint256 _amount, string[] memory _hashes) external onlyMinter isNotOPaused {
+    function burnGold(uint256 _amount, string[] memory _hashes)
+        external
+        onlyMinter
+        isNotOPaused
+    {
         for (uint256 i = 0; i < _hashes.length; i++) {
             burningProofs[burningProofsCounter] = _hashes[i];
             burningProofsCounter++;
@@ -109,8 +126,13 @@ contract AUZToken is Ownable, ERC20 {
     /**
      * @notice Minting of AUZtokens backed by gold tokens
      * @param _value The amount transferred
+     * @param _hashes The array of IPFS hashes of the gold mint proofs
      */
-    function mintGold(uint256 _value, string[] memory _hashes) public onlyMinter isNotOPaused {
+    function mintGold(uint256 _value, string[] memory _hashes)
+        public
+        onlyMinter
+        isNotOPaused
+    {
         uint256 fee = calculateCommissionMint(_value);
         if (fee > 0) _mint(feeWallet, fee);
         for (uint256 i = 0; i < _hashes.length; i++) {
@@ -138,6 +160,7 @@ contract AUZToken is Ownable, ERC20 {
         virtual
         override
         isNotOPaused
+        onlyAllowedContracts
         returns (bool)
     {
         privateTransfer(msg.sender, recipient, amount);
@@ -155,7 +178,7 @@ contract AUZToken is Ownable, ERC20 {
         address sender,
         address recipient,
         uint256 amount
-    ) public virtual override isNotOPaused returns (bool) {
+    ) public virtual override isNotOPaused onlyAllowedContracts returns (bool) {
         uint256 currentAllowance = allowance(sender, _msgSender());
         require(
             currentAllowance >= amount,
