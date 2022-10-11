@@ -1,85 +1,31 @@
-/**
- * MIT License
- * ===========
- *
- * Copyright (c) 2021 Phoenix
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- */
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-abstract contract TokenInterface {
-    function balanceOf(address account) external view virtual returns (uint256);
-
-    function transfer(address recipient, uint256 amount)
-        external
-        virtual
-        returns (bool success);
-
-    function transferFrom(address sender, address recipient, uint256 amount)
-        external
-        virtual
-        returns (bool success);
-}
-
 /**
- * @dev interface defining the TokenRecipient
- */
-interface TokenRecipient {
-    function tokenFallback(
-        address _from,
-        uint256 _value,
-        bytes calldata data
-    ) external;
-}
-
-/**
- * @title ZToken
- * @author Phoenix
- * @notice Contract for the ZToken
+ * @title AUZToken
+ * @author Idealogic
+ * @notice Contract for the AUZToken
  * @dev All function calls are currently implemented without side effects
  */
-contract ZToken is Ownable, ERC20, TokenRecipient {
+contract AUZToken is Ownable, ERC20 {
     // attach library functions
-    using SafeMath for uint256;
-    using SafeERC20 for TokenInterface;
+    using SafeERC20 for IERC20;
     using Address for address;
 
     //event
     event CommissionUpdate(
-        uint256 _numerator,
-        uint256 _denominator,
+        uint256 _percent,
         string _data
     );
     event TransferPreSigned(address _from, address _to, uint256 _value, uint256 _networkFee);
 
     //public variables
-    TokenInterface private backedTokenContract;
+    IERC20 private backedTokenContract;
 
     //private variables
     uint8 private decimal = 8;
@@ -87,41 +33,33 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
     bool private paused;
 
     // These variable help to calculate the commissions on each token transfer transcation
-    uint256 public commission_numerator_minting = 1; // commission percentage on minting 0.025%
-    uint256 public commission_denominator_minting = 4;
+    uint256 public MINT_FEE_PERCENT = 25; // commission percentage on minting 0.025%
+    uint256 public TRANSFER_FEE_PERCENT = 1; // commission percentage on transfer 0.001%
+    uint256 public PERCENT_COEFICIENT = 100000; // denominator for percentage calculation. 100000 = 100%, minimum value is 0.001%. 
 
-    uint256 public commission_numerator_zcrw = 1; // commission percentage to zowner 0.005%
-    uint256 public commission_denominator_zcrw = 200;
+    // Minter address
+    address public minter;
 
-    uint256 public commission_numerator_phoenix_crw = 1; // commission percentage to zowner 0.005%
-    uint256 public commission_denominator_phoenix_crw = 200;
+    // Address at which fees transferred
+    address public feeWallet;
 
-    // addresses at which fees transferred
-    address public phoenixCrw; // Z commission to phoenixCRW
-    address public zCrw; // Z commission to ZCRW
-    address public minter; // Z minter
-
-    // tokens minted in this wallet
+    // Tokens minted in this wallet
     address public sellingWallet;
 
     constructor(
         address _goldTokenAddress,
-        address _phoenixCrw,
-        address _zcrw,
         address _sellingWallet,
-        address _minter
+        address _minter,
+        address _feeWallet
     )
-        isContractaAddress(_goldTokenAddress)
-        onlyNonZeroAddress(_phoenixCrw)
-        onlyNonZeroAddress(_zcrw)
+        isContractAddress(_goldTokenAddress)
         onlyNonZeroAddress(_sellingWallet)
-        ERC20("ZToken", "ZT")
+        ERC20("AUZToken", "AUZ")
     {
-        backedTokenContract = TokenInterface(_goldTokenAddress);
-        phoenixCrw = _phoenixCrw;
-        zCrw = _zcrw;
+        backedTokenContract = IERC20(_goldTokenAddress);
         sellingWallet = _sellingWallet;
         minter = _minter;
+        feeWallet = _feeWallet;
         migrated = false;
         paused = false;
     }
@@ -148,11 +86,6 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
             _addressContract.isContract(),
             "Only contract is allowed"
         );
-        _;
-    }
-
-    modifier onlyPhoenix {
-        require(msg.sender == phoenixCrw, "Only Phoenix is allowed");
         _;
     }
 
@@ -203,10 +136,10 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
         uint256 balanceBefore = backedTokenContract.balanceOf(address(this));
         require(backedTokenContract.transferFrom(msg.sender, address(this), _value), "Transfer failed");
         uint256 balanceAfter = backedTokenContract.balanceOf(address(this));
-        require(balanceAfter.sub(balanceBefore) == _value, "Minting failed");
+        require(balanceAfter - balanceBefore == _value, "Minting failed");
         uint256 fee = calculateCommissionMint(_value);
-        if (fee > 0) _mint(phoenixCrw, fee);
-        _mint(sellingWallet, _value.sub(fee));
+        if (fee > 0) _mint(feeWallet, fee);
+        _mint(sellingWallet, _value - fee);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -270,7 +203,7 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
         require(_newGoldAddress != address(backedTokenContract), "Same address is not allowed");
         uint256 balance = backedTokenContract.balanceOf(address(this));
         backedTokenContract.transfer(owner(), balance);
-        backedTokenContract = TokenInterface(_newGoldAddress);
+        backedTokenContract = IERC20(_newGoldAddress);
         backedTokenContract.transferFrom(owner(), address(this), balance);
         require(balance == backedTokenContract.balanceOf(address(this)), "Migration: operation error");
         migrated = true;
@@ -301,30 +234,13 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
         onlyNonZeroAddress(_recipient)
         returns (bool)
     {
-        uint256 feeToOlegacy = calculateCommissionPhoenixCrw(_amount);
-        uint256 feeToZowner = calculateCommissionToZCrw(_amount);
+        uint256 fee = calculateCommissionTransfer(_amount);
 
-        if (feeToOlegacy > 0) _transfer(_from, phoenixCrw, feeToOlegacy);
-        if (feeToZowner > 0) _transfer(_from, zCrw, feeToZowner);
-        uint256 amount_credit = feeToZowner.add(feeToOlegacy);
-        _transfer(_from, _recipient, _amount.sub(amount_credit));
+        if (fee > 0) _transfer(_from, feeWallet, fee);
+        _transfer(_from, _recipient, _amount - fee);
         return true;
     }
 
-    /**
-     * @notice update phoenix wallet address. This address will be responsible for holding commission on tokens transfer
-     * @dev Only Phoenix can call
-     * @param _user The address of phoenixCrw wallet
-     * @return Bool value
-     */
-    function updatePhoenixAddress(address _user)
-        external
-        onlyPhoenix
-        returns (bool)
-    {
-        phoenixCrw = _user;
-        return true;
-    }
 
     /**
      * @notice check Minting fee
@@ -337,84 +253,53 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
         view
         returns (uint256)
     {
-        return
-            _amount
-                .mul(commission_numerator_minting)
-                .div(commission_denominator_minting)
-                .div(100);
+        return _amount * MINT_FEE_PERCENT / PERCENT_COEFICIENT;
     }
 
     /**
-     * @notice check transer fee credited to ZToken owner
+     * @notice check Transfer fee
+     * @dev Does not checks if sender/recipient is whitelisted
      * @param _amount The intended amount of transfer
      * @return uint256 Calculated commission
      */
-    function calculateCommissionToZCrw(uint256 _amount)
+    function calculateCommissionTransfer(uint256 _amount)
         public
         view
         returns (uint256)
     {
-        return
-            _amount
-                .mul(commission_numerator_zcrw)
-                .div(commission_denominator_zcrw)
-                .div(100);
-    }
-
-    /**
-     * @notice check transer fee credited to Phoenix
-     * @param _amount The intended amount of transfer
-     * @return uint256 Calculated commission
-     */
-    function calculateCommissionPhoenixCrw(uint256 _amount)
-        public
-        view
-        returns (uint256)
-    {
-        return
-            _amount
-                .mul(commission_numerator_phoenix_crw)
-                .div(commission_denominator_phoenix_crw)
-                .div(100);
-    }
-
-    /**
-     * @notice Update commission to be charged on each token transfer for Phoenix
-     * @dev Only Phoenix Owner can call
-     * @param _n The numerator of commission
-     * @param _d The denominator of commission
-     */
-    function updateCommissionPhoenixTransfer(uint256 _n, uint256 _d)
-        public
-        onlyPhoenix
-    {
-        commission_denominator_phoenix_crw = _d;
-        commission_numerator_phoenix_crw = _n;
-        emit CommissionUpdate(_n, _d, "Phoenix commission");
-    }
-
-    /**
-     * @notice Update commission to be charged on each token transfer for Z owner
-     * @dev Only owner can call
-     * @param _n The numerator of commission
-     * @param _d The denominator of commission
-     */
-    function updateCommissionZTransfer(uint256 _n, uint256 _d) public onlyOwner {
-        commission_denominator_zcrw = _d;
-        commission_numerator_zcrw = _n;
-        emit CommissionUpdate(_n, _d, "Z owner's commission");
+        return _amount * TRANSFER_FEE_PERCENT / PERCENT_COEFICIENT;
     }
 
     /**
      * @notice Update commission to be charged on token minting
-     * @dev Only phoenix can call
-     * @param _n The numerator of commission
-     * @param _d The denominator of commission
+     * @dev Only owner can call
+     * @param _mintFeePercent The comission percent
      */
-    function updateCommissionMint(uint256 _n, uint256 _d) public onlyPhoenix {
-        commission_denominator_minting = _d;
-        commission_numerator_minting = _n;
-        emit CommssionUpdate(_n, _d, "Minting commision");
+    function updateCommissionMint(uint256 _mintFeePercent) public onlyOwner {
+        require(_mintFeePercent <= PERCENT_COEFICIENT, "Commission cannot be more than 100%");
+        MINT_FEE_PERCENT = _mintFeePercent;
+        emit CommissionUpdate(MINT_FEE_PERCENT, "Minting commision");
+    }
+
+    /**
+     * @notice Update commission to be charged on token transfer
+     * @dev Only owner can call
+     * @param _transferFeePercent The comission percent
+     */
+    function updateCommissionTransfer(uint256 _transferFeePercent) public onlyOwner {
+        require(_transferFeePercent <= PERCENT_COEFICIENT, "Commission cannot be more than 100%");
+        TRANSFER_FEE_PERCENT = _transferFeePercent;
+        emit CommissionUpdate(TRANSFER_FEE_PERCENT, "Transfer commision");
+    }
+
+    /**
+     * @notice Update address at which fees transferred
+     * @dev Only owner can call
+     * @param _feeWallet The fee address
+     */
+    function updateFeeWallet(address _feeWallet) public onlyOwner {
+        require(_feeWallet != address(0), "Zero address is not allowed");
+        feeWallet = _feeWallet;
     }
 
 
@@ -433,7 +318,7 @@ contract ZToken is Ownable, ERC20, TokenRecipient {
  * @title AdvancedOToken
  * @author Phoenix
  */
-contract AdvancedZToken is ZToken {
+contract AdvancedAUZToken is AUZToken {
     mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
 
     bytes4 public methodWord_transfer = bytes4(keccak256("transfer(address,uint256)"));
@@ -441,15 +326,12 @@ contract AdvancedZToken is ZToken {
     bytes4 public methodWord_increaseApproval = bytes4(keccak256("increaseAllowance(address,uint256)"));
     bytes4 public methodWord_decreaseApproval = bytes4(keccak256("decreaseAllowance(address,uint256)"));
 
-    using SafeMath for uint256;
-
     constructor(
         address _goldTokenAddress,
-        address _phoenixCrw,
-        address _zcrw,
         address _sellingWallet,
-        address _minter
-    )  ZToken( _goldTokenAddress, _phoenixCrw, _zcrw, _sellingWallet, _minter) {
+        address _minter,
+        address _feeWallet
+    )  AUZToken( _goldTokenAddress, _sellingWallet, _minter, _feeWallet) {
     }
 
     /**
@@ -554,8 +436,8 @@ contract AdvancedZToken is ZToken {
         uint256 currentAllowance = allowance(signer, _msgSender());
         // Perform approval
         if(methodHash == methodWord_approve) _approve(signer, to, amount);
-        else if(methodHash == methodWord_increaseApproval) _approve(signer, to, currentAllowance.add(amount));
-        else if(methodHash == methodWord_decreaseApproval) _approve(signer, to, currentAllowance.sub(amount));
+        else if(methodHash == methodWord_increaseApproval) _approve(signer, to, currentAllowance + amount);
+        else if(methodHash == methodWord_decreaseApproval) _approve(signer, to, currentAllowance - amount);
         return true;
     }
 
