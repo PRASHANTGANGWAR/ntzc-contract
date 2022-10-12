@@ -337,6 +337,8 @@ contract AUZToken is Ownable, ERC20 {
 contract AdvancedAUZToken is AUZToken {
     mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
 
+     bytes4 public methodWord_sell =
+        bytes4(keccak256("sell(uint256)"));
     bytes4 public methodWord_transfer =
         bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public methodWord_approve =
@@ -490,6 +492,33 @@ contract AdvancedAUZToken is AUZToken {
         else if (methodHash == methodWord_decreaseApproval)
             _approve(signer, to, currentAllowance - amount);
         return true;
+    }
+
+    function preAuthorizedSell(
+        bytes32 message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        bytes32 token,
+        uint256 networkFee,
+        uint256 amount
+    ) public {
+        bytes32 proof = getProofTransfer(
+            methodWord_transfer,
+            token,
+            networkFee,
+            msg.sender,
+            sellingWallet,
+            amount
+        );
+        address signer = preAuthValidations(proof, message, token, r, s, v);
+
+        // Deduct network fee if broadcaster charges network fee
+        if (networkFee > 0) {
+            privateTransfer(signer, msg.sender, networkFee);
+        }
+        privateTransfer(signer, sellingWallet, amount);
+        emit TransferPreSigned(signer, sellingWallet, amount, networkFee);
     }
 
     /**
