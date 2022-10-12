@@ -33,7 +33,7 @@ contract AUZToken is Ownable, ERC20 {
     bool private paused;
 
     // These variable help to calculate the commissions on each token transfer transcation
-    uint256 public MINT_FEE_PERCENT = 25; // commission percentage on minting 0.025%
+    uint256 public MINT_FEE_PERCENT = 0; // commission percentage on minting 0.000%
     uint256 public TRANSFER_FEE_PERCENT = 1; // commission percentage on transfer 0.001%
     uint256 public PERCENT_COEFICIENT = 100000; // denominator for percentage calculation. 100000 = 100%, minimum value is 0.001%.
 
@@ -54,6 +54,9 @@ contract AUZToken is Ownable, ERC20 {
 
     //Mapping of addresses of contracts that are allowed to transfer tokens
     mapping(address => bool) public allowedContracts;
+
+    //Mapping of addresses of contracts that are free of transfer fee
+    mapping(address => bool) public freeOfTransferFeeContracts;
 
     constructor(
         address _sellingWallet,
@@ -212,8 +215,7 @@ contract AUZToken is Ownable, ERC20 {
         uint256 _amount
     ) internal onlyNonZeroAddress(_recipient) returns (bool) {
         uint256 fee = calculateCommissionTransfer(_amount);
-
-        if (fee > 0) _transfer(_from, feeWallet, fee);
+        if (fee > 0 && !freeOfTransferFeeContracts[_from]) _transfer(_from, feeWallet, fee);
         _transfer(_from, _recipient, _amount - fee);
         return true;
     }
@@ -286,6 +288,38 @@ contract AUZToken is Ownable, ERC20 {
         require(_feeWallet != address(0), "Zero address is not allowed");
         feeWallet = _feeWallet;
     }
+
+    /**
+     * @notice Update address at which tokens are sold
+     * @dev Only owner can call
+     * @param _sellingWallet The selling address
+     */
+    function updateSellingWallet(address _sellingWallet) public onlyOwner {
+        require(_sellingWallet != address(0), "Zero address is not allowed");
+        sellingWallet = _sellingWallet;
+    }
+
+    /**
+        * @notice Update addresses of contracts that are allowed to transfer tokens
+        * @dev Only owner can call
+        * @param _contractAddress The address of the contract
+        * @param _isAllowed Bool variable that indicates is contract allowed to transfer tokens
+        */
+    function updateAllowedContracts(address _contractAddress, bool _isAllowed) external onlyOwner {
+        allowedContracts[_contractAddress] = _isAllowed;
+    }
+
+    /** 
+        * @notice  Update addresses of contracts that are free of transfer fee
+        * @dev Only owner can call
+        * @param _contractAddress The address of the contract
+        * @param _isFree Bool variable that indicates is contract free of transfer fee
+        */
+    function updateFreeContracts(address _contractAddress, bool _isFree) external onlyOwner {
+        freeOfTransferFeeContracts[_contractAddress] = _isFree;
+    }
+
+
 
     /**
      * @notice Prevents contract from accepting ETHs
