@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../token/iazx.sol";
 
 /**
  * @title AUZToken
@@ -53,21 +54,37 @@ contract HotWallet is Ownable {
         bytes32 s,
         uint8 v
     ) external onlyManager {
-      bytes32 proof = getBuyGoldWithSignatureProof(buyer, amount);
-      address signer = preAuthValidations(proof, message, r, s, v);
-      require(managers[signer], "HotWallet: Signer is not manager");
-      require(signer != msg.sender, "HotWallet: Signer must be another manager");
-      ERC20(azx).transfer(buyer, amount);
-      signatureToken++;
+        bytes32 proof = getSignatureProof(buyer, amount);
+        address signer = preAuthValidations(proof, message, r, s, v);
+        require(managers[signer], "HotWallet: Signer is not manager");
+        require(
+            signer != msg.sender,
+            "HotWallet: Signer must be another manager"
+        );
+        ERC20(azx).transfer(buyer, amount);
     }
 
-    function getBuyGoldWithSignatureProof(address buyer, uint256 amount)
+    function sellGoldWithSignature(
+        address seller,
+        uint256 amount,
+        bytes32 message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) external onlyManager {
+        bytes32 proof = getSignatureProof(seller, amount);
+        address signer = preAuthValidations(proof, message, r, s, v);
+        require(signer == seller, "HotWallet: Signer is not investor");
+        IAdvancedAUZToken(azx).sellGoldWithHotWallet(seller,amount);
+    }
+
+    function getSignatureProof(address investor, uint256 amount)
         public
         view
         returns (bytes32)
     {
         bytes32 proof = keccak256(
-            abi.encodePacked(getChainID(), buyer, amount, signatureToken)
+            abi.encodePacked(getChainID(), investor, amount, signatureToken)
         );
         return proof;
     }
@@ -124,5 +141,10 @@ contract HotWallet is Ownable {
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, message));
         address signer = ecrecover(prefixedHash, v, r, s);
         return signer;
+    }
+
+    function withdraw(address _token, address _to, uint256 _amount) external onlyOwner {
+        require(_to != address(0), "HotWallet: zero address is not allowed");
+        ERC20(_token).transfer(_to, _amount);
     }
 }

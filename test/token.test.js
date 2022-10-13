@@ -27,9 +27,10 @@ describe("Token tests", function () {
     await hw.deployed();
     await hw.updateManagers(signers[1].address, true);
 
+    await azx.updateHotWallet(hw.address);
     await azx.updateAllowedContracts(hw.address, true);
-    await azx.updateFreeContracts(hw.address, true);
-    await azx.updateFreeContracts(signers[0].address, true);
+    await azx.updateFreeOfFeeContracts(hw.address, true);
+    await azx.updateFreeOfFeeContracts(signers[0].address, true);
 
     await azx.mintGold(BigInt(50000 * 1e8), [
       "wdfqf78qef8f",
@@ -40,7 +41,7 @@ describe("Token tests", function () {
 
     await hw.buyGold(signers[2].address, BigInt(5000 * 1e8));
 
-    const buyProof = await hw.getBuyGoldWithSignatureProof(
+    const buyProof = await hw.getSignatureProof(
       signers[2].address,
       BigInt(10000 * 1e8)
     );
@@ -61,6 +62,32 @@ describe("Token tests", function () {
       buyObj.r,
       buyObj.s,
       buyObj.v
+    );
+    console.log(await azx.balanceOf(signers[2].address));
+
+    // ____________________________________________________ //
+
+    const sellProof = await hw.connect(signers[2].address).getSignatureProof(
+      signers[2].address,
+      BigInt(100 * 1e8)
+    );
+    const sellSig = (
+      await signers[2].signMessage(ethers.utils.arrayify(sellProof))
+    ).slice(2);
+    const sellObj = {};
+    sellObj.r = "0x" + sellSig.slice(0, 64);
+    sellObj.s = "0x" + sellSig.slice(64, 128);
+    sellObj.v = parseInt(sellSig.slice(128), 16);
+    console.log(sellObj);
+
+    console.log(await azx.balanceOf(signers[2].address));
+    await hw.sellGoldWithSignature(
+      signers[2].address,
+      BigInt(100 * 1e8),
+      sellProof,
+      sellObj.r,
+      sellObj.s,
+      sellObj.v
     );
     console.log(await azx.balanceOf(signers[2].address));
 

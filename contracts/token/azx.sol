@@ -166,7 +166,7 @@ contract AUZToken is Ownable, ERC20 {
         onlyAllowedContracts
         returns (bool)
     {
-        privateTransfer(msg.sender, recipient, amount);
+        _privateTransfer(msg.sender, recipient, amount);
         return true;
     }
 
@@ -188,7 +188,7 @@ contract AUZToken is Ownable, ERC20 {
             "ERC20: transfer amount exceeds allowance"
         );
         _approve(sender, _msgSender(), currentAllowance - amount);
-        privateTransfer(sender, recipient, amount);
+        _privateTransfer(sender, recipient, amount);
         return true;
     }
 
@@ -209,7 +209,7 @@ contract AUZToken is Ownable, ERC20 {
      * @param _amount amount of tokens to be transferred
      * @return bool
      */
-    function privateTransfer(
+    function _privateTransfer(
         address _from,
         address _recipient,
         uint256 _amount
@@ -315,7 +315,7 @@ contract AUZToken is Ownable, ERC20 {
         * @param _contractAddress The address of the contract
         * @param _isFree Bool variable that indicates is contract free of transfer fee
         */
-    function updateFreeContracts(address _contractAddress, bool _isFree) external onlyOwner {
+    function updateFreeOfFeeContracts(address _contractAddress, bool _isFree) external onlyOwner {
         freeOfTransferFeeContracts[_contractAddress] = _isFree;
     }
 
@@ -335,6 +335,8 @@ contract AUZToken is Ownable, ERC20 {
  * @author Phoenix
  */
 contract AdvancedAUZToken is AUZToken {
+    address public hotWallet;
+
     mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
 
      bytes4 public methodWord_sell =
@@ -364,6 +366,11 @@ contract AdvancedAUZToken is AUZToken {
             id := chainid()
         }
         return id;
+    }
+
+    function updateHotWallet (address _hotWallet) external onlyOwner {
+        require(_hotWallet != address(0), "Zero address is not allowed");
+        hotWallet = _hotWallet;
     }
 
     /**
@@ -445,9 +452,9 @@ contract AdvancedAUZToken is AUZToken {
 
         // Deduct network fee if broadcaster charges network fee
         if (networkFee > 0) {
-            privateTransfer(signer, msg.sender, networkFee);
+            _privateTransfer(signer, msg.sender, networkFee);
         }
-        privateTransfer(signer, to, amount);
+        _privateTransfer(signer, to, amount);
         emit TransferPreSigned(signer, to, amount, networkFee);
     }
 
@@ -515,9 +522,9 @@ contract AdvancedAUZToken is AUZToken {
 
         // Deduct network fee if broadcaster charges network fee
         if (networkFee > 0) {
-            privateTransfer(signer, msg.sender, networkFee);
+            _privateTransfer(signer, msg.sender, networkFee);
         }
-        privateTransfer(signer, sellingWallet, amount);
+        _privateTransfer(signer, sellingWallet, amount);
         emit TransferPreSigned(signer, sellingWallet, amount, networkFee);
     }
 
@@ -590,5 +597,11 @@ contract AdvancedAUZToken is AUZToken {
             )
         );
         return proof;
+    }
+
+    function sellGoldWithHotWallet (address _from, uint256 _amount) external returns (bool) {
+        require(msg.sender == hotWallet, "Only hot wallet can execute this function");
+        _privateTransfer(_from, hotWallet, _amount);
+        return true;
     }
 }
