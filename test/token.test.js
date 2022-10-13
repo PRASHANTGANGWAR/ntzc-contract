@@ -1,130 +1,140 @@
 const { ethers, upgrades } = require("hardhat");
-
-const hexExample =
-  "0x0000000000000000000000000000000000000000000000000000000000000001";
-const hexExample2 =
-  "0x0000000000000000000000000000000000000000000000000000000000000002";
+const { expect } = require("chai");
 
 describe("Token tests", function () {
-  it("Token", async function () {
+  it("Should mint tokens to selling wallet", async function () {
     const signers = await ethers.getSigners();
 
-    for (let i = 0; i < 5; i++) {
-      console.log(`Signer ${i}: ${signers[i].address}`);
-    }
-    console.log("____________________________________________________");
+    const sellingWallet = signers[1].address;
+    const mintAmount = BigInt(50000 * 1e8);
 
-    const AZX = await ethers.getContractFactory("AdvancedAUZToken");
-    const azx = await AZX.deploy(
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
       signers[0].address,
       signers[0].address,
-      signers[3].address
-    );
+    ]);
     await azx.deployed();
 
-    const HW = await ethers.getContractFactory("HotWallet");
-    const hw = await HW.deploy(azx.address);
-    await hw.deployed();
-    await hw.updateManagers(signers[1].address, true);
-
-    await azx.updateHotWallet(hw.address);
-    await azx.updateAllowedContracts(hw.address, true);
-    await azx.updateFreeOfFeeContracts(hw.address, true);
-    await azx.updateFreeOfFeeContracts(signers[0].address, true);
-
-    await azx.mintGold(BigInt(50000 * 1e8), [
+    await azx.mintGold(mintAmount, [
       "wdfqf78qef8f",
       "qw7d98qfquf9q",
       "8wq9fh89qef3r",
     ]);
-    await azx.transfer(hw.address, BigInt(50000 * 1e8));
 
-    await hw.buyGold(signers[1].address, BigInt(5000 * 1e8));
-
-    const buyProof = await hw.getSignatureProof(
-      signers[2].address,
-      BigInt(10000 * 1e8)
-    );
-    const buySig = await signers[1].signMessage(
-      ethers.utils.arrayify(buyProof)
-    );
-
-    console.log(await azx.balanceOf(signers[2].address));
-    await hw.buyGoldWithSignature(
-      signers[2].address,
-      BigInt(10000 * 1e8),
-      buyProof,
-      buySig
-    );
-    console.log(await azx.balanceOf(signers[2].address));
-
-    // ____________________________________________________ //
-
-    const sellProof = await hw
-      .connect(signers[2].address)
-      .getSignatureProof(signers[2].address, BigInt(100 * 1e8));
-    const sellSig = await signers[2].signMessage(
-      ethers.utils.arrayify(sellProof)
-    );
-
-    console.log(await azx.balanceOf(signers[2].address));
-    await hw.sellGoldWithSignature(
-      signers[2].address,
-      BigInt(100 * 1e8),
-      sellProof,
-      sellSig
-    );
-    console.log(await azx.balanceOf(signers[2].address));
-
-    //____________________________________________________//
-
-    const aprfuncCode = await azx.methodWord_approve();
-    const aprhash = await azx
-      .connect(signers[1])
-      .getProofApproval(
-        aprfuncCode,
-        hexExample2,
-        BigInt(1 * 1e8),
-        signers[0].address,
-        signers[4].address,
-        BigInt(100 * 1e8)
-      );
-    const aprsig = await signers[1].signMessage(ethers.utils.arrayify(aprhash));
-
-    await azx.preAuthorizedApproval(
-      aprfuncCode,
-      aprhash,
-      aprsig,
-      hexExample2,
-      BigInt(1 * 1e8),
-      signers[4].address,
-      BigInt(100 * 1e8)
-    );
-
-    //____________________________________________________//
-
-    const trfuncCode = await azx.methodWord_transfer();
-    const trhash = await azx
-      .connect(signers[1])
-      .getProofTransfer(
-        trfuncCode,
-        hexExample,
-        BigInt(1 * 1e8),
-        signers[0].address,
-        signers[4].address,
-        BigInt(100 * 1e8)
-      );
-    const trsig = await signers[1].signMessage(ethers.utils.arrayify(trhash));
-
-    console.log(await azx.balanceOf(signers[1].address));
-
-    await azx.preAuthorizedTransfer(
-      trhash,
-      trsig,
-      hexExample,
-      BigInt(1 * 1e8),
-      signers[4].address,
-      BigInt(100 * 1e8)
-    );
+    expect(BigInt(await azx.balanceOf(sellingWallet))).to.equal(mintAmount);
   });
+
+  it("Should revert if not a minter call the mint", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[1].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+
+    await expect(
+      azx
+        .connect(signers[1])
+        .mintGold(mintAmount, [
+          "wdfqf78qef8f",
+          "qw7d98qfquf9q",
+          "8wq9fh89qef3r",
+        ])
+    ).to.be.revertedWith("AUZToken: Only Minter is allowed");
+  });
+
+  it("Should burn from token contract", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+
+    azx.mintGold(mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    await azx.transfer(azx.address, mintAmount);
+    const balance = await azx.balanceOf(azx.address);
+    azx.burnGold(balance, ["wdfqf78qef8f"]);
+
+    expect(BigInt(await azx.balanceOf(azx.address))).to.equal(BigInt(0));
+  });
+
+  it("Should revert transfers from not allowed contracts and allow from allowed", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+
+    const SomeContract = await ethers.getContractFactory("SomeContract");
+    const someContract = await SomeContract.deploy();
+    await someContract.deployed();
+
+    await azx.mintGold(mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    await azx.transfer(someContract.address, mintAmount);
+    await expect(someContract.someFunction(azx.address)).to.be.revertedWith("AUZToken: Contract doesn't have permission to transfer tokens");
+    await azx.updateAllowedContracts(someContract.address, true);
+    await someContract.someFunction(azx.address);
+  });
+
+  it("Should revert if delegateTransferFrom call not a transfersDelegator and vice versa", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+
+    await azx.mintGold(mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8))).to.be.revertedWith("Only transfers delegator can call this function");
+    await expect(azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8))).to.be.revertedWith("Only transfers delegator can call this function");
+    await azx.updateTransfersDelegator(signers[0].address)
+    await azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8));
+    await azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8))
+    // await azx.updateAllowedContracts(someContract.address, true);
+    // await someContract.someFunction(azx.address);
+  });
+
+
 });

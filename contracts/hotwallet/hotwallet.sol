@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../token/iazx.sol";
+// import "../token/iazx.sol";
 
 /**
  * @title AUZToken
@@ -63,17 +63,17 @@ contract HotWallet is Ownable {
         ERC20(azx).transfer(buyer, amount);
     }
 
-    function sellGoldWithSignature(
-        address seller,
-        uint256 amount,
-        bytes32 message,
-        bytes memory signature
-    ) external onlyManager {
-        bytes32 proof = getSignatureProof(seller, amount);
-        address signer = preAuthValidations(proof, message, signature);
-        require(signer == seller, "HotWallet: Signer is not investor");
-        IAdvancedAUZToken(azx).sellGoldWithHotWallet(seller,amount);
-    }
+    // function sellGoldWithSignature(
+    //     address seller,
+    //     uint256 amount,
+    //     bytes32 message,
+    //     bytes memory signature
+    // ) external onlyManager {
+    //     bytes32 proof = getSignatureProof(seller, amount);
+    //     address signer = preAuthValidations(proof, message, signature);
+    //     require(signer == seller, "HotWallet: Signer is not investor");
+    //     IAdvancedAUZToken(azx).sellGoldWithHotWallet(seller,amount);
+    // }
 
     function getSignatureProof(address investor, uint256 amount)
         public

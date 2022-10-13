@@ -1,5 +1,7 @@
 require("@nomiclabs/hardhat-ethers");
 require("@openzeppelin/hardhat-upgrades");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomicfoundation/hardhat-network-helpers");
 require("hardhat-tracer");
 require("@nomiclabs/hardhat-etherscan");
 require('dotenv').config({ path: __dirname + '/.env' })
