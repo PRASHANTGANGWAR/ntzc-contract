@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title AUZToken
@@ -377,9 +378,7 @@ contract AdvancedAUZToken is AUZToken {
      * @notice Validates the message and signature
      * @param proof The message that was expected to be signed by user
      * @param message The message that user signed
-     * @param r Signature component
-     * @param s Signature component
-     * @param v Signature component
+     * @param signature Signature 
      * @param token The unique token for each delegated function
      * @return address Signer of message
      */
@@ -387,11 +386,9 @@ contract AdvancedAUZToken is AUZToken {
         bytes32 proof,
         bytes32 message,
         bytes32 token,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
+        bytes memory signature
     ) private returns (address) {
-        address signer = getSigner(message, r, s, v);
+        address signer = getSigner(message, signature);
         require(signer != address(0), "Zero address not allowed");
         require(!tokenUsed[signer][token], "Token already used");
         require(proof == message, "Invalid proof");
@@ -402,29 +399,22 @@ contract AdvancedAUZToken is AUZToken {
     /**
      * @notice Find signer
      * @param message The message that user signed
-     * @param r Signature component
-     * @param s Signature component
-     * @param v Signature component
+     * @param signature Signature
      * @return address Signer of message
      */
     function getSigner(
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
+        bytes memory signature
     ) public pure returns (address) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, message));
-        address signer = ecrecover(prefixedHash, v, r, s);
+        message = ECDSA.toEthSignedMessageHash(message);
+        address signer = ECDSA.recover(message, signature);
         return signer;
     }
 
     /**
      * @notice Delegated transfer. Gas fee will be paid by relayer
      * @param message The message that user signed
-     * @param r Signature component
-     * @param s Signature component
-     * @param v Signature component
+     * @param signature Signature
      * @param token The unique token for each delegated function
      * @param networkFee The fee that will be paid to relayer for gas fee he spends
      * @param to The array of recipients
@@ -432,9 +422,7 @@ contract AdvancedAUZToken is AUZToken {
      */
     function preAuthorizedTransfer(
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v,
+        bytes memory signature,
         bytes32 token,
         uint256 networkFee,
         address to,
@@ -448,7 +436,7 @@ contract AdvancedAUZToken is AUZToken {
             to,
             amount
         );
-        address signer = preAuthValidations(proof, message, token, r, s, v);
+        address signer = preAuthValidations(proof, message, token, signature);
 
         // Deduct network fee if broadcaster charges network fee
         if (networkFee > 0) {
@@ -462,9 +450,7 @@ contract AdvancedAUZToken is AUZToken {
      * @notice Delegated approval. Gas fee will be paid by relayer
      * @dev Only approve, increaseApproval and decreaseApproval can be delegated
      * @param message The message that user signed
-     * @param r Signature component
-     * @param s Signature component
-     * @param v Signature component
+     * @param signature Signature
      * @param token The unique token for each delegated function
      * @param networkFee The fee that will be paid to relayer for gas fee he spends
      * @param to The spender address
@@ -474,9 +460,7 @@ contract AdvancedAUZToken is AUZToken {
     function preAuthorizedApproval(
         bytes4 methodHash,
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v,
+        bytes memory signature,
         bytes32 token,
         uint256 networkFee,
         address to,
@@ -490,7 +474,7 @@ contract AdvancedAUZToken is AUZToken {
             to,
             amount
         );
-        address signer = preAuthValidations(proof, message, token, r, s, v);
+        address signer = preAuthValidations(proof, message, token, signature);
         uint256 currentAllowance = allowance(signer, _msgSender());
         // Perform approval
         if (methodHash == methodWord_approve) _approve(signer, to, amount);
@@ -503,9 +487,7 @@ contract AdvancedAUZToken is AUZToken {
 
     function preAuthorizedSell(
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v,
+        bytes memory signature,
         bytes32 token,
         uint256 networkFee,
         uint256 amount
@@ -518,7 +500,7 @@ contract AdvancedAUZToken is AUZToken {
             sellingWallet,
             amount
         );
-        address signer = preAuthValidations(proof, message, token, r, s, v);
+        address signer = preAuthValidations(proof, message, token, signature);
 
         // Deduct network fee if broadcaster charges network fee
         if (networkFee > 0) {

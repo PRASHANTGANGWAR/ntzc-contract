@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../token/iazx.sol";
 
 /**
@@ -50,12 +51,10 @@ contract HotWallet is Ownable {
         address buyer,
         uint256 amount,
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
+        bytes memory signature
     ) external onlyManager {
         bytes32 proof = getSignatureProof(buyer, amount);
-        address signer = preAuthValidations(proof, message, r, s, v);
+        address signer = preAuthValidations(proof, message, signature);
         require(managers[signer], "HotWallet: Signer is not manager");
         require(
             signer != msg.sender,
@@ -68,12 +67,10 @@ contract HotWallet is Ownable {
         address seller,
         uint256 amount,
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
+        bytes memory signature
     ) external onlyManager {
         bytes32 proof = getSignatureProof(seller, amount);
-        address signer = preAuthValidations(proof, message, r, s, v);
+        address signer = preAuthValidations(proof, message, signature);
         require(signer == seller, "HotWallet: Signer is not investor");
         IAdvancedAUZToken(azx).sellGoldWithHotWallet(seller,amount);
     }
@@ -105,19 +102,15 @@ contract HotWallet is Ownable {
      * @notice Validates the message and signature
      * @param proof The message that was expected to be signed by user
      * @param message The message that user signed
-     * @param r Signature component
-     * @param s Signature component
-     * @param v Signature component
+     * @param signature Signature
      * @return address Signer of message
      */
     function preAuthValidations(
         bytes32 proof,
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
+        bytes memory signature
     ) internal pure returns (address) {
-        address signer = getSigner(message, r, s, v);
+        address signer = getSigner(message, signature);
         require(signer != address(0), "Zero address not allowed");
         require(proof == message, "Invalid proof");
         return signer;
@@ -126,20 +119,14 @@ contract HotWallet is Ownable {
     /**
      * @notice Find signer
      * @param message The message that user signed
-     * @param r Signature component
-     * @param s Signature component
-     * @param v Signature component
-     * @return address Signer of message
+     * @param signature Signature
      */
     function getSigner(
         bytes32 message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
+        bytes memory signature
     ) internal pure returns (address) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, message));
-        address signer = ecrecover(prefixedHash, v, r, s);
+        message = ECDSA.toEthSignedMessageHash(message);
+        address signer = ECDSA.recover(message, signature);
         return signer;
     }
 
