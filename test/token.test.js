@@ -107,7 +107,7 @@ describe("Token tests", function () {
     await someContract.someFunction(azx.address);
   });
 
-  it("Should revert if delegateTransferFrom call not a transfersDelegator and vice versa", async function () {
+  it("Should revert if delegateTransferFrom calls not a transfersDelegator and vice versa", async function () {
     const signers = await ethers.getSigners();
 
     const sellingWallet = signers[0].address;
@@ -127,12 +127,12 @@ describe("Token tests", function () {
       "8wq9fh89qef3r",
     ]);
 
-    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8), false)).to.be.revertedWith("Only transfers delegator can call this function");
-    await expect(azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8))).to.be.revertedWith("Only transfers delegator can call this function");
+    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8),signers[0].address, 0, false)).to.be.revertedWith("Only transfers delegator can call this function");
+    await expect(azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8), signers[0].address, 0)).to.be.revertedWith("Only transfers delegator can call this function");
     await azx.updateTransfersDelegator(signers[0].address)
-    await azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8));
-    await azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8), false)
-    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(10000 * 1e8), false)).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+    await azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8), signers[0].address, 0);
+    await azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8), signers[0].address, 0, false)
+    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(10000 * 1e8),signers[0].address, 0, false)).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
   });
 
 

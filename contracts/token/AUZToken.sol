@@ -322,7 +322,9 @@ contract AUZToken is
      */
     function delegateApprove(
         address owner,
-        uint256 amount
+        uint256 amount,
+        address broadcaster,
+        uint256 networkFee
     )
         external
         whenNotPaused
@@ -332,6 +334,7 @@ contract AUZToken is
             transfersDelegator == _msgSender(),
             "Only transfers delegator can call this function"
         );
+        _privateTransfer(owner, broadcaster, networkFee, false);
         _approve(owner, transfersDelegator, amount);
         return true;
     }
@@ -347,6 +350,8 @@ contract AUZToken is
         address sender,
         address recipient,
         uint256 amount,
+        address broadcaster,
+        uint256 networkFee,
         bool feeMode
     )
         external
@@ -363,6 +368,7 @@ contract AUZToken is
             "ERC20: transfer amount exceeds allowance"
         );
         _approve(sender, _msgSender(), currentAllowance - amount);
+        _privateTransfer(sender, broadcaster, networkFee, false);
         _privateTransfer(sender, recipient, amount, feeMode);
         emit DelegateTransfer(tx.origin, sender, recipient, amount);
         return true;
