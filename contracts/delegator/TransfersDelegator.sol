@@ -4,12 +4,24 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "../token/IAUZToken.sol";
 
 contract TransfersDelegator is Ownable {
+    
+    /**
+     * @dev ID of the executing chain
+     * @return uint value
+     */
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
 
+    
 }
-
-
 
 // /**
 //  * @title AdvancedOToken

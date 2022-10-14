@@ -111,7 +111,7 @@ describe("Token tests", function () {
     const signers = await ethers.getSigners();
 
     const sellingWallet = signers[0].address;
-    const mintAmount = BigInt(50000 * 1e8);
+    const mintAmount = BigInt(60000 * 1e8);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -127,14 +127,14 @@ describe("Token tests", function () {
       "8wq9fh89qef3r",
     ]);
 
-    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8))).to.be.revertedWith("Only transfers delegator can call this function");
+    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8), false)).to.be.revertedWith("Only transfers delegator can call this function");
     await expect(azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8))).to.be.revertedWith("Only transfers delegator can call this function");
     await azx.updateTransfersDelegator(signers[0].address)
     await azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8));
-    await azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8))
-    // await azx.updateAllowedContracts(someContract.address, true);
-    // await someContract.someFunction(azx.address);
+    await azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8), false)
+    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(10000 * 1e8), false)).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
   });
 
 
+  // COMISSIONS TESTS !!!
 });

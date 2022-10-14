@@ -279,7 +279,7 @@ contract AUZToken is
         onlyAllowedContracts
         returns (bool)
     {
-        _privateTransfer(msg.sender, recipient, amount);
+        _privateTransfer(msg.sender, recipient, amount, true);
         return true;
     }
 
@@ -308,7 +308,7 @@ contract AUZToken is
             "ERC20: transfer amount exceeds allowance"
         );
         _approve(sender, _msgSender(), currentAllowance - amount);
-        _privateTransfer(sender, recipient, amount);
+        _privateTransfer(sender, recipient, amount, true);
         return true;
     }
 
@@ -322,7 +322,7 @@ contract AUZToken is
         address owner,
         uint256 amount
     )
-        public
+        external
         whenNotPaused
         returns (bool)
     {
@@ -344,9 +344,10 @@ contract AUZToken is
     function delegateTransferFrom(
         address sender,
         address recipient,
-        uint256 amount
+        uint256 amount,
+        bool feeMode
     )
-        public
+        external
         whenNotPaused
         returns (bool)
     {
@@ -360,7 +361,7 @@ contract AUZToken is
             "ERC20: transfer amount exceeds allowance"
         );
         _approve(sender, _msgSender(), currentAllowance - amount);
-        _privateTransfer(sender, recipient, amount);
+        _privateTransfer(sender, recipient, amount, feeMode);
         return true;
     }
 
@@ -375,14 +376,15 @@ contract AUZToken is
     function _privateTransfer(
         address _from,
         address _recipient,
-        uint256 _amount
+        uint256 _amount,
+        bool _feeMode
     ) internal returns (bool) {
         require(
             _recipient != address(0),
             "ERC20: transfer to the zero address"
         );
         uint256 fee = calculateCommissionTransfer(_amount);
-        if (fee > 0 && !freeOfFeeContracts[_from])
+        if (fee > 0 && !freeOfFeeContracts[_from] && _feeMode)
             _transfer(_from, feeWallet, fee);
         _transfer(_from, _recipient, _amount - fee);
         return true;
