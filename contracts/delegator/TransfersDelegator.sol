@@ -118,7 +118,6 @@ contract TransfersDelegator is Initializable, OwnableUpgradeable {
         bytes4 methodHash,
         bytes32 token,
         uint256 networkFee,
-        address broadcaster,
         address to,
         uint256 amount
     ) public view returns (bytes32) {
@@ -129,7 +128,6 @@ contract TransfersDelegator is Initializable, OwnableUpgradeable {
                 address(this),
                 token,
                 networkFee,
-                broadcaster,
                 to,
                 amount
             )
@@ -144,12 +142,40 @@ contract TransfersDelegator is Initializable, OwnableUpgradeable {
      * @param signature Signature
      * @param token The unique token for each delegated function
      * @param networkFee The fee that will be paid to relayer for gas fee he spends
-     * @param to The spender address
      * @param amount The amount to be allowed
      * @return Bool value
      */
     function preAuthorizedApproval(
-        bytes4 methodHash,
+        bytes32 message,
+        bytes memory signature,
+        bytes32 token,
+        uint256 networkFee,
+        uint256 amount
+    ) public onlyManager returns (bool) {
+        bytes32 proof = getProof(
+            methodWord_approve,
+            token,
+            networkFee,
+            address(this),
+            amount
+        );
+        address signer = preAuthValidations(proof, message, token, signature);
+
+        IAUZToken(azx).delegateApprove(signer, amount, msg.sender, networkFee);
+
+        return true;
+    }
+
+    /**
+     * @notice Delegated transfer. Gas fee will be paid by relayer
+     * @param message The message that user signed
+     * @param signature Signature
+     * @param token The unique token for each delegated function
+     * @param networkFee The fee that will be paid to relayer for gas fee he spends
+     * @param to The array of recipients
+     * @param amount The array of amounts to be transferred
+     */
+    function preAuthorizedTransfer(
         bytes32 message,
         bytes memory signature,
         bytes32 token,
@@ -158,23 +184,14 @@ contract TransfersDelegator is Initializable, OwnableUpgradeable {
         uint256 amount
     ) public onlyManager returns (bool) {
         bytes32 proof = getProof(
-            methodHash,
+            methodWord_transfer,
             token,
             networkFee,
-            msg.sender,
             to,
             amount
         );
         address signer = preAuthValidations(proof, message, token, signature);
-
-        if (methodHash == methodWord_approve) {
-            IAUZToken(azx).delegateApprove(
-                signer,
-                amount,
-                msg.sender,
-                networkFee
-            );
-        }
+        IAUZToken(azx).delegateTransferFrom(signer, to, amount, msg.sender, networkFee, true);
 
         return true;
     }
