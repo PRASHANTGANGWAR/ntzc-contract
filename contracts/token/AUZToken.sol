@@ -47,7 +47,7 @@ contract AUZToken is
     address public sellingWallet;
 
     // Contract wich uses for delegate operations
-    address public transfersDelegator;
+    address public manager;
 
     //Proofs for gold mints
     mapping(uint256 => string) public mintingProofs;
@@ -126,24 +126,24 @@ contract AUZToken is
      * @param _minter The minter address
      */
     function updateMinter(address _minter) public onlyOwner {
-        require(_minter != address(0), "Zero address is not allowed");
+        require(_minter != address(0), "AUZToken: Zero address is not allowed");
         minter = _minter;
     }
 
     /**
      * @notice Update address which uses for delegate operations
      * @dev Only owner can call
-     * @param _transfersDelegator The fee address
+     * @param _manager The fee address
      */
-    function updateTransfersDelegator(address _transfersDelegator)
+    function updateManager(address _manager)
         public
         onlyOwner
     {
         require(
-            _transfersDelegator != address(0),
-            "Zero address is not allowed"
+            _manager != address(0),
+            "AUZToken: Zero address is not allowed"
         );
-        transfersDelegator = _transfersDelegator;
+        manager = _manager;
     }
 
     /**
@@ -152,7 +152,7 @@ contract AUZToken is
      * @param _feeWallet The fee address
      */
     function updateFeeWallet(address _feeWallet) public onlyOwner {
-        require(_feeWallet != address(0), "Zero address is not allowed");
+        require(_feeWallet != address(0), "AUZToken: Zero address is not allowed");
         feeWallet = _feeWallet;
     }
 
@@ -162,7 +162,7 @@ contract AUZToken is
      * @param _sellingWallet The selling address
      */
     function updateSellingWallet(address _sellingWallet) public onlyOwner {
-        require(_sellingWallet != address(0), "Zero address is not allowed");
+        require(_sellingWallet != address(0), "AUZToken: Zero address is not allowed");
         sellingWallet = _sellingWallet;
     }
 
@@ -200,7 +200,7 @@ contract AUZToken is
     function updateCommissionMint(uint256 _mintFeePercent) public onlyOwner {
         require(
             _mintFeePercent <= PERCENT_COEFICIENT,
-            "Commission cannot be more than 100%"
+            "AUZToken: Commission cannot be more than 100%"
         );
         MINT_FEE_PERCENT = _mintFeePercent;
         emit CommissionUpdate(MINT_FEE_PERCENT, "Minting commision");
@@ -217,7 +217,7 @@ contract AUZToken is
     {
         require(
             _transferFeePercent <= PERCENT_COEFICIENT,
-            "Commission cannot be more than 100%"
+            "AUZToken: Commission cannot be more than 100%"
         );
         TRANSFER_FEE_PERCENT = _transferFeePercent;
         emit CommissionUpdate(TRANSFER_FEE_PERCENT, "Transfer commision");
@@ -315,7 +315,7 @@ contract AUZToken is
     }
 
     /**
-     * @notice Delegate approve for transfersDelegator contract only.
+     * @notice Delegate approve for manager contract only.
      * @dev overriden Function of the openzeppelin ERC20 contract
      * @param owner receiver's address
      * @param amount The amount to be transferred
@@ -331,16 +331,16 @@ contract AUZToken is
         returns (bool)
     {
         require(
-            transfersDelegator == _msgSender(),
-            "Only transfers delegator can call this function"
+            manager == _msgSender(),
+            "AUZToken: Only transfers manager can call this function"
         );
         _privateTransfer(owner, broadcaster, networkFee, false);
-        _approve(owner, transfersDelegator, amount);
+        _approve(owner, manager, amount);
         return true;
     }
 
     /**
-     * @notice Delegate transferFrom for transfersDelegator contract only.
+     * @notice Delegate transferFrom for manager contract only.
      * @dev overriden Function of the openzeppelin ERC20 contract
      * @param recipient receiver's address
      * @param sender transfer token from account
@@ -359,10 +359,10 @@ contract AUZToken is
         returns (bool)
     {
         require(
-            transfersDelegator == msg.sender,
-            "Only transfers delegator can call this function"
+            manager == msg.sender,
+            "AUZToken: Only transfers manager can call this function"
         );
-        uint256 currentAllowance = allowance(sender,transfersDelegator);
+        uint256 currentAllowance = allowance(sender,manager);
         require(
             currentAllowance >= amount,
             "ERC20: transfer amount exceeds allowance"

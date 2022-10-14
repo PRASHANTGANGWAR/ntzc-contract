@@ -1,7 +1,7 @@
 const { ethers, upgrades } = require("hardhat");
 const { expect } = require("chai");
 
-describe("Delegator tests", function () {
+describe("Manager tests", function () {
   it("Delegate approve", async function () {
     const signers = await ethers.getSigners();
     const hexExample =
@@ -21,12 +21,12 @@ describe("Delegator tests", function () {
     ]);
     await azx.transfer(signers[1].address, BigInt(50000 * 1e8));
 
-    const TD = await ethers.getContractFactory("TransfersDelegator");
+    const TD = await ethers.getContractFactory("Manager");
     const td = await upgrades.deployProxy(TD, []);
     await td.deployed();
     await td.updateAZX(azx.address);
 
-    await azx.updateTransfersDelegator(td.address);
+    await azx.updateManager(td.address);
 
     const aprfuncCode = await td.methodWord_approve();
     const aprhash = await td
@@ -72,12 +72,12 @@ describe("Delegator tests", function () {
     ]);
     await azx.transfer(signers[1].address, BigInt(50000 * 1e8));
 
-    const TD = await ethers.getContractFactory("TransfersDelegator");
+    const TD = await ethers.getContractFactory("Manager");
     const td = await upgrades.deployProxy(TD, []);
     await td.deployed();
     await td.updateAZX(azx.address);
 
-    await azx.updateTransfersDelegator(td.address);
+    await azx.updateManager(td.address);
 
     const aprfuncCode = await td.methodWord_approve();
     const aprhash = await td
@@ -101,7 +101,7 @@ describe("Delegator tests", function () {
           BigInt(1 * 1e8),
           BigInt(100 * 1e8)
         )
-    ).to.be.revertedWith("TransfersDelegator: Only managers is allowed");
+    ).to.be.revertedWith("Manager: Only managers is allowed");
   });
 
   it("Delegate transfer", async function () {
@@ -126,12 +126,12 @@ describe("Delegator tests", function () {
     ]);
     await azx.transfer(signers[1].address, BigInt(2000 * 1e8));
 
-    const TD = await ethers.getContractFactory("TransfersDelegator");
+    const TD = await ethers.getContractFactory("Manager");
     const td = await upgrades.deployProxy(TD, []);
     await td.deployed();
     await td.updateAZX(azx.address);
 
-    await azx.updateTransfersDelegator(td.address);
+    await azx.updateManager(td.address);
 
     const aprfuncCode = await td.methodWord_approve();
     const aprhash = await td
@@ -204,12 +204,12 @@ describe("Delegator tests", function () {
     ]);
     await azx.transfer(signers[1].address, BigInt(5000 * 1e8));
 
-    const TD = await ethers.getContractFactory("TransfersDelegator");
+    const TD = await ethers.getContractFactory("Manager");
     const td = await upgrades.deployProxy(TD, []);
     await td.deployed();
     await td.updateAZX(azx.address);
 
-    await azx.updateTransfersDelegator(td.address);
+    await azx.updateManager(td.address);
 
     const aprfuncCode = await td.methodWord_approve();
     const aprhash = await td
@@ -277,12 +277,12 @@ describe("Delegator tests", function () {
     ]);
     await azx.transfer(signers[1].address, BigInt(5000 * 1e8));
 
-    const TD = await ethers.getContractFactory("TransfersDelegator");
+    const TD = await ethers.getContractFactory("Manager");
     const td = await upgrades.deployProxy(TD, []);
     await td.deployed();
     await td.updateAZX(azx.address);
 
-    await azx.updateTransfersDelegator(td.address);
+    await azx.updateManager(td.address);
 
     const aprfuncCode = await td.methodWord_approve();
     const aprhash = await td
@@ -325,6 +325,6 @@ describe("Delegator tests", function () {
         signers[5].address,
         BigInt(2000 * 1e8)
       )
-    ).to.be.revertedWith("Invalid proof");
+    ).to.be.revertedWith("Manager: Invalid proof");
   });
 });
