@@ -25,6 +25,8 @@ contract AUZToken is
 
     // event
     event CommissionUpdate(uint256 _percent, string _data);
+    event DelegateTransfer(address _caller, address _sender, address _recipient, uint256 _amount);
+     
 
     uint256 public mintingProofsCounter;
     uint256 public burningProofsCounter;
@@ -362,6 +364,7 @@ contract AUZToken is
         );
         _approve(sender, _msgSender(), currentAllowance - amount);
         _privateTransfer(sender, recipient, amount, feeMode);
+        emit DelegateTransfer(tx.origin, sender, recipient, amount);
         return true;
     }
 
