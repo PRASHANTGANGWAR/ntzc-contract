@@ -77,7 +77,7 @@ describe("Token tests", function () {
     expect(BigInt(await azx.balanceOf(azx.address))).to.equal(BigInt(0));
   });
 
-  it("Should revert transfers from not allowed contracts and allow from allowed", async function () {
+  it("Should revert transfers from not allowed contracts and vice versa", async function () {
     const signers = await ethers.getSigners();
 
     const sellingWallet = signers[0].address;
@@ -135,6 +135,71 @@ describe("Token tests", function () {
     await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(10000 * 1e8),signers[0].address, 0, false)).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
   });
 
+  it("Transfer comissions calculations", async function () {
+    const signers = await ethers.getSigners();
 
-  // COMISSIONS TESTS !!!
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+
+    await azx.mintGold(mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    await azx.updateCommissionTransfer(0); // 0% fee
+    await azx.transfer(signers[1].address, BigInt(1000 * 1e8));
+    expect(BigInt(await azx.balanceOf(signers[1].address))).to.equal(
+      BigInt(1000 * 1e8)
+    );
+
+    await azx.updateCommissionTransfer(1000); // 1% fee
+    await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
+    expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
+      BigInt(990 * 1e8)
+    );
+
+  });
+
+  it("Should take transfer fee if address is not whitelisted and and vice versa", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+
+    await azx.mintGold(mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    await azx.updateCommissionTransfer(1000); // 1% fee
+    await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
+    expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
+      BigInt(990 * 1e8)
+    );
+
+    await azx.updateFreeOfFeeContracts(signers[0].address, true); // 0% fee
+    await azx.transfer(signers[1].address, BigInt(1000 * 1e8));
+    expect(BigInt(await azx.balanceOf(signers[1].address))).to.equal(
+      BigInt(1000 * 1e8)
+    );
+
+  });
 });
