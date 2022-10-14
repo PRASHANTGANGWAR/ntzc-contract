@@ -25,8 +25,12 @@ contract AUZToken is
 
     // event
     event CommissionUpdate(uint256 _percent, string _data);
-    event DelegateTransfer(address _caller, address _sender, address _recipient, uint256 _amount);
-     
+    event DelegateTransfer(
+        address _caller,
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    );
 
     uint256 public mintingProofsCounter;
     uint256 public burningProofsCounter;
@@ -135,15 +139,14 @@ contract AUZToken is
      * @dev Only owner can call
      * @param _manager The fee address
      */
-    function updateManager(address _manager)
-        public
-        onlyOwner
-    {
+    function updateManager(address _manager) public onlyOwner {
         require(
             _manager != address(0),
             "AUZToken: Zero address is not allowed"
         );
         manager = _manager;
+        freeOfFeeContracts[_manager] = true;
+        allowedContracts[_manager] = true;
     }
 
     /**
@@ -152,7 +155,10 @@ contract AUZToken is
      * @param _feeWallet The fee address
      */
     function updateFeeWallet(address _feeWallet) public onlyOwner {
-        require(_feeWallet != address(0), "AUZToken: Zero address is not allowed");
+        require(
+            _feeWallet != address(0),
+            "AUZToken: Zero address is not allowed"
+        );
         feeWallet = _feeWallet;
     }
 
@@ -162,7 +168,10 @@ contract AUZToken is
      * @param _sellingWallet The selling address
      */
     function updateSellingWallet(address _sellingWallet) public onlyOwner {
-        require(_sellingWallet != address(0), "AUZToken: Zero address is not allowed");
+        require(
+            _sellingWallet != address(0),
+            "AUZToken: Zero address is not allowed"
+        );
         sellingWallet = _sellingWallet;
     }
 
@@ -325,11 +334,7 @@ contract AUZToken is
         uint256 amount,
         address broadcaster,
         uint256 networkFee
-    )
-        external
-        whenNotPaused
-        returns (bool)
-    {
+    ) external whenNotPaused returns (bool) {
         require(
             manager == _msgSender(),
             "AUZToken: Only transfers manager can call this function"
@@ -353,16 +358,12 @@ contract AUZToken is
         address broadcaster,
         uint256 networkFee,
         bool feeMode
-    )
-        external
-        whenNotPaused
-        returns (bool)
-    {
+    ) external whenNotPaused returns (bool) {
         require(
             manager == msg.sender,
             "AUZToken: Only transfers manager can call this function"
         );
-        uint256 currentAllowance = allowance(sender,manager);
+        uint256 currentAllowance = allowance(sender, manager);
         require(
             currentAllowance >= amount,
             "ERC20: transfer amount exceeds allowance"
@@ -393,8 +394,8 @@ contract AUZToken is
             "ERC20: transfer to the zero address"
         );
         uint256 fee = calculateCommissionTransfer(_amount);
-        if (fee > 0 && !freeOfFeeContracts[_from] && _feeMode){
-             _transfer(_from, feeWallet, fee);
+        if (fee > 0 && !freeOfFeeContracts[_from] && _feeMode) {
+            _transfer(_from, feeWallet, fee);
             _amount = _amount - fee;
         }
         _transfer(_from, _recipient, _amount);

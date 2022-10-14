@@ -327,4 +327,107 @@ describe("Manager tests", function () {
       )
     ).to.be.revertedWith("Manager: Invalid proof");
   });
+
+  it("Buy without signature should revert if amount exceed buy limit", async function () {
+    const signers = await ethers.getSigners();
+    const hexExample =
+      "0x0000000000000000000000000000000000000000000000000000000000000001";
+    const hexExample2 =
+      "0x0000000000000000000000000000000000000000000000000000000000000002";
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      signers[0].address,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+    await azx.mintGold(BigInt(50000 * 1e8), [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    const TD = await ethers.getContractFactory("Manager");
+    const td = await upgrades.deployProxy(TD, []);
+    await td.deployed();
+    await td.updateAZX(azx.address);
+    await td.updateManagers(signers[1].address, true);
+
+    await azx.updateFreeOfFeeContracts(signers[0].address, true);
+    await azx.transfer(td.address, BigInt(50000 * 1e8));
+    await azx.updateManager(td.address);
+
+    await expect(
+      td.buyGold(signers[2].address, BigInt(10000 * 1e8))
+    ).to.be.revertedWith("Manager: amount exceeds buy limit");
+
+    await td.buyGold(signers[2].address, BigInt(1000 * 1e8));
+  });
+
+  it("Buy with manager signature, should revert if signer or caller aren't managers", async function () {
+    const signers = await ethers.getSigners();
+    const hexExample =
+      "0x0000000000000000000000000000000000000000000000000000000000000001";
+    const hexExample2 =
+      "0x0000000000000000000000000000000000000000000000000000000000000002";
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      signers[0].address,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+    await azx.mintGold(BigInt(50000 * 1e8), [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    const TD = await ethers.getContractFactory("Manager");
+    const td = await upgrades.deployProxy(TD, []);
+    await td.deployed();
+    await td.updateAZX(azx.address);
+    await td.updateManagers(signers[1].address, true);
+
+    await azx.updateFreeOfFeeContracts(signers[0].address, true);
+    await azx.transfer(td.address, BigInt(50000 * 1e8));
+    await azx.updateManager(td.address);
+
+    const buyfuncCode = await td.methodWord_buy();
+    const buyhash = await td
+      .connect(signers[1])
+      .getProof(
+        buyfuncCode,
+        hexExample,
+        BigInt(0 * 1e8),
+        signers[2].address,
+        BigInt(1000 * 1e8)
+      );
+
+    const buysigWrong = await signers[2].signMessage(
+      ethers.utils.arrayify(buyhash)
+    );
+    await expect(
+      td.buyGoldWithSignature(
+        buyhash,
+        buysigWrong,
+        hexExample,
+        signers[2].address,
+        BigInt(1000 * 1e8)
+      )
+    ).to.be.revertedWith("Manager: Signer is not manager");
+
+    const buysigTrue = await signers[1].signMessage(
+      ethers.utils.arrayify(buyhash)
+    );
+    await td.buyGoldWithSignature(
+      buyhash,
+      buysigTrue,
+      hexExample,
+      signers[2].address,
+      BigInt(1000 * 1e8)
+    );
+  });
 });

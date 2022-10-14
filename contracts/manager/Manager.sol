@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../token/IAUZToken.sol";
 
 contract Manager is Initializable, OwnableUpgradeable {
+    uint256 public BUY_LIMIT;
     address public azx;
 
     mapping(address => bool) public managers;
@@ -15,6 +16,7 @@ contract Manager is Initializable, OwnableUpgradeable {
 
     bytes4 public methodWord_transfer;
     bytes4 public methodWord_approve;
+    bytes4 public methodWord_buy;
 
     modifier onlyManager() {
         require(
@@ -28,8 +30,10 @@ contract Manager is Initializable, OwnableUpgradeable {
         __Ownable_init();
 
         managers[msg.sender] = true;
+        BUY_LIMIT = 5000 * 10**8;
         methodWord_transfer = bytes4(keccak256("transfer(address,uint256)"));
         methodWord_approve = bytes4(keccak256("approve(address,uint256)"));
+        methodWord_buy = bytes4(keccak256("buy(address,uint256)"));
     }
 
     /**
@@ -65,6 +69,15 @@ contract Manager is Initializable, OwnableUpgradeable {
         onlyOwner
     {
         managers[_manager] = _isManager;
+    }
+
+    /**
+     * @notice Update limit for buy without second manager signature
+     * @dev Only owner can call
+     * @param _limit Limit for buy without second manager signature
+     */
+    function updateBuyLimit(uint256 _limit) external onlyOwner {
+        BUY_LIMIT = _limit;
     }
 
     /**
@@ -136,6 +149,44 @@ contract Manager is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @notice Send AZX tokens from this contract to user with amount limit
+     * @dev Only managers can call
+     * @param _buyer The address of user
+     * @param _amount Amount of AZX
+     */
+    function buyGold(address _buyer, uint256 _amount) external onlyManager {
+        require(_amount <= BUY_LIMIT, "Manager: amount exceeds buy limit");
+        require(_buyer != address(0), "Manager: zero address is not allowed");
+        IAUZToken(azx).transfer(_buyer, _amount);
+    }
+
+    /**
+     * @notice Send AZX tokens from this contract to user without limit and with second manager signature
+     * @dev Only managers can call
+     * @param message The message that user signed
+     * @param signature Signature
+     * @param token The unique token for each delegated function
+     * @param buyer The fee that will be paid to relayer for gas fee he spends
+     * @param amount The amount to be allowed
+     */
+    function buyGoldWithSignature(
+        bytes32 message,
+        bytes memory signature,
+        bytes32 token,
+        address buyer,
+        uint256 amount
+    ) external onlyManager {
+        bytes32 proof = getProof(methodWord_buy, token, 0, buyer, amount);
+        address signer = preAuthValidations(proof, message, token, signature);
+        require(managers[signer], "Manager: Signer is not manager");
+        require(
+            signer != msg.sender,
+            "Manager: Signer must be another manager"
+        );
+        IAUZToken(azx).transfer(buyer, amount);
+    }
+
+    /**
      * @notice Delegated approval. Gas fee will be paid by relayer
      * @dev Only approve, increaseApproval and decreaseApproval can be delegated
      * @param message The message that user signed
@@ -191,7 +242,14 @@ contract Manager is Initializable, OwnableUpgradeable {
             amount
         );
         address signer = preAuthValidations(proof, message, token, signature);
-        IAUZToken(azx).delegateTransferFrom(signer, to, amount, msg.sender, networkFee, true);
+        IAUZToken(azx).delegateTransferFrom(
+            signer,
+            to,
+            amount,
+            msg.sender,
+            networkFee,
+            true
+        );
 
         return true;
     }
