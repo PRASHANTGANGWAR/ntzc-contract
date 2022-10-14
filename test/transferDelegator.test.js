@@ -430,4 +430,62 @@ describe("Manager tests", function () {
       BigInt(1000 * 1e8)
     );
   });
+
+  it("Delegate sell", async function () {
+    const signers = await ethers.getSigners();
+    const hexExample =
+      "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      signers[0].address,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+    await azx.mintGold(BigInt(50000 * 1e8), [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    const TD = await ethers.getContractFactory("Manager");
+    const td = await upgrades.deployProxy(TD, []);
+    await td.deployed();
+    await td.updateAZX(azx.address);
+    await td.updateManagers(signers[1].address, true);
+
+    await azx.updateFreeOfFeeContracts(signers[0].address, true);
+    await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
+    await azx.updateManager(td.address);
+    await azx.connect(signers[2]).approve(td.address, BigInt(1000 * 1e8));
+
+    const sellfuncCode = await td.methodWord_sell();
+    const sellhash = await td
+      .connect(signers[2])
+      .getProof(
+        sellfuncCode,
+        hexExample,
+        BigInt(0 * 1e8),
+        td.address,
+        BigInt(1000 * 1e8)
+      );
+
+    const sellsig = await signers[2].signMessage(
+      ethers.utils.arrayify(sellhash)
+    );
+
+    await td.preAuthorizedSell(
+      sellhash,
+      sellsig,
+      hexExample,
+      0,
+      BigInt(1000 * 1e8)
+    );
+
+    expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(BigInt(0));
+    expect(BigInt(await azx.balanceOf(td.address))).to.equal(
+      BigInt(1000 * 1e8)
+    );
+  });
 });

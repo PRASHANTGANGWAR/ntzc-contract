@@ -17,6 +17,7 @@ contract Manager is Initializable, OwnableUpgradeable {
     bytes4 public methodWord_transfer;
     bytes4 public methodWord_approve;
     bytes4 public methodWord_buy;
+    bytes4 public methodWord_sell;
 
     modifier onlyManager() {
         require(
@@ -34,6 +35,7 @@ contract Manager is Initializable, OwnableUpgradeable {
         methodWord_transfer = bytes4(keccak256("transfer(address,uint256)"));
         methodWord_approve = bytes4(keccak256("approve(address,uint256)"));
         methodWord_buy = bytes4(keccak256("buy(address,uint256)"));
+        methodWord_sell = bytes4(keccak256("sell(address,uint256)"));
     }
 
     /**
@@ -213,6 +215,41 @@ contract Manager is Initializable, OwnableUpgradeable {
         address signer = preAuthValidations(proof, message, token, signature);
 
         IAUZToken(azx).delegateApprove(signer, amount, msg.sender, networkFee);
+
+        return true;
+    }
+
+    /**
+     * @notice Delegated sell AZX. Gas fee will be paid by relayer
+     * @param message The message that user signed
+     * @param signature Signature
+     * @param token The unique token for each delegated function
+     * @param networkFee The fee that will be paid to relayer for gas fee he spends
+     * @param amount The array of amounts to be selled
+     */
+    function preAuthorizedSell(
+        bytes32 message,
+        bytes memory signature,
+        bytes32 token,
+        uint256 networkFee,
+        uint256 amount
+    ) public onlyManager returns (bool) {
+        bytes32 proof = getProof(
+            methodWord_sell,
+            token,
+            networkFee,
+            address(this),
+            amount
+        );
+        address signer = preAuthValidations(proof, message, token, signature);
+        IAUZToken(azx).delegateTransferFrom(
+            signer,
+            address(this),
+            amount,
+            msg.sender,
+            networkFee,
+            false
+        );
 
         return true;
     }
