@@ -19,6 +19,17 @@ contract Manager is Initializable, OwnableUpgradeable {
     bytes4 public methodWord_buy;
     bytes4 public methodWord_sell;
 
+    event Buy(address indexed buyer, uint256 amount);
+    event BuyWithSignature(address indexed buyer, address signer, address caller, uint256 amount);
+    event preAuthorizedAction(
+        string actionType,
+        address signer,
+        address manager,
+        address to,
+        uint256 amount,
+        uint256 networkFee
+    );
+
     modifier onlyManager() {
         require(
             managers[msg.sender] || msg.sender == owner(),
@@ -160,6 +171,8 @@ contract Manager is Initializable, OwnableUpgradeable {
         require(_amount <= BUY_LIMIT, "Manager: amount exceeds buy limit");
         require(_buyer != address(0), "Manager: zero address is not allowed");
         IAUZToken(azx).transfer(_buyer, _amount);
+
+        emit Buy(_buyer, _amount);
     }
 
     /**
@@ -186,6 +199,8 @@ contract Manager is Initializable, OwnableUpgradeable {
             "Manager: Signer must be another manager"
         );
         IAUZToken(azx).transfer(buyer, amount);
+
+        emit BuyWithSignature(buyer, signer, msg.sender, amount);
     }
 
     /**
@@ -215,6 +230,8 @@ contract Manager is Initializable, OwnableUpgradeable {
         address signer = preAuthValidations(proof, message, token, signature);
 
         IAUZToken(azx).delegateApprove(signer, amount, msg.sender, networkFee);
+
+        emit preAuthorizedAction("Approve", signer, msg.sender, address(this), amount, networkFee);
 
         return true;
     }
@@ -250,6 +267,8 @@ contract Manager is Initializable, OwnableUpgradeable {
             networkFee,
             false
         );
+
+        emit preAuthorizedAction("Sell", signer, msg.sender, address(this), amount, networkFee);
 
         return true;
     }
@@ -287,6 +306,8 @@ contract Manager is Initializable, OwnableUpgradeable {
             networkFee,
             true
         );
+
+        emit preAuthorizedAction("Transfer", signer, msg.sender, to, amount, networkFee);
 
         return true;
     }
