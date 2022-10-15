@@ -20,7 +20,12 @@ contract Manager is Initializable, OwnableUpgradeable {
     bytes4 public methodWord_sell;
 
     event Buy(address indexed buyer, uint256 amount);
-    event BuyWithSignature(address indexed buyer, address signer, address caller, uint256 amount);
+    event BuyWithSignature(
+        address indexed buyer,
+        address signer,
+        address caller,
+        uint256 amount
+    );
     event preAuthorizedAction(
         string actionType,
         address signer,
@@ -91,6 +96,22 @@ contract Manager is Initializable, OwnableUpgradeable {
      */
     function updateBuyLimit(uint256 _limit) external onlyOwner {
         BUY_LIMIT = _limit;
+    }
+
+    /**
+     * @notice Withdraw from contract any token
+     * @dev Only owner can call
+     * @param _token Token address for withdrawing
+     * @param _to Destination address
+     * @param _amount Withdrawing amount
+     */
+    function withdraw(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external onlyOwner {
+        require(_to != address(0), "HotWallet: zero address is not allowed");
+        IAUZToken(_token).transfer(_to, _amount);
     }
 
     /**
@@ -231,7 +252,14 @@ contract Manager is Initializable, OwnableUpgradeable {
 
         IAUZToken(azx).delegateApprove(signer, amount, msg.sender, networkFee);
 
-        emit preAuthorizedAction("Approve", signer, msg.sender, address(this), amount, networkFee);
+        emit preAuthorizedAction(
+            "Approve",
+            signer,
+            msg.sender,
+            address(this),
+            amount,
+            networkFee
+        );
 
         return true;
     }
@@ -268,7 +296,14 @@ contract Manager is Initializable, OwnableUpgradeable {
             false
         );
 
-        emit preAuthorizedAction("Sell", signer, msg.sender, address(this), amount, networkFee);
+        emit preAuthorizedAction(
+            "Sell",
+            signer,
+            msg.sender,
+            address(this),
+            amount,
+            networkFee
+        );
 
         return true;
     }
@@ -307,7 +342,14 @@ contract Manager is Initializable, OwnableUpgradeable {
             true
         );
 
-        emit preAuthorizedAction("Transfer", signer, msg.sender, to, amount, networkFee);
+        emit preAuthorizedAction(
+            "Transfer",
+            signer,
+            msg.sender,
+            to,
+            amount,
+            networkFee
+        );
 
         return true;
     }
