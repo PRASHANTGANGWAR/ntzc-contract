@@ -27,10 +27,26 @@ async function main() {
   //   contract: "contracts/token/AUZToken.sol:AUZToken",
   // });
 
-  //  0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc => 0xdF755CDdA91aC37C57EEc8e63AfC8eA0371BE255
+  //  0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc => 0xa67A6B4200B16d53843d09F18200d1E1Ad6852c2
 
   // const Manager = await ethers.getContractFactory("Manager");
   // const manager = await upgrades.deployProxy(Manager, []);
+  // manager.deployed();
+  // await waitBlocks(5);
+  // const managerImplAddress = await getImplementationAddress(
+  //   ethers.provider,
+  //   manager.address
+  // );
+  // console.log(
+  //   `Manager deployed to: ${manager.address} => ${managerImplAddress}`
+  // );
+  // await run("verify:verify", {
+  //   address: managerImplAddress,
+  //   contract: "contracts/manager/Manager.sol:Manager",
+  // });
+    
+  // const Manager = await ethers.getContractFactory("Manager");
+  // const manager = await upgrades.upgradeProxy("0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc", Manager);
   // manager.deployed();
   // await waitBlocks(5);
   // const managerImplAddress = await getImplementationAddress(
@@ -64,7 +80,7 @@ async function main() {
   // )
 
   // console.log(await manager.methodWord_approve())
-  // const hex = "0x9077c3fae74a277cdfe18494fee2ea8f16adeff923677c7209a8e4a8c823e024";
+  // const hex = "0x1aad12789e9bab2e481209275300cff75cb56fcac8a851fb77ec8296b5a67966";
   // const methodApprove = "0x095ea7b3";
   // const proof = await manager.getProof(methodApprove, hex, BigInt(1 * 1e8), manager.address, BigInt(10 * 1e8));
   // const sign = await signers[0].signMessage(ethers.utils.arrayify(proof));
@@ -78,7 +94,14 @@ async function main() {
   // const sign = await signers[0].signMessage(ethers.utils.arrayify(proof));
   // console.log(proof);
   // console.log(sign);
-
+    
+  //console.log(await manager.methodWord_sell())
+  const hex = "0xefc0e08a720dcfecd57bc3abd3e37d02cba58f45a5b8ba80ea2720e6d050e37a";
+  const methodTransfer = "0x00000000";
+  const proof = await manager.getProof(methodTransfer, hex, BigInt(1 * 1e8), "0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc", BigInt(5 * 1e8));
+  const sign = await signers[0].signMessage(ethers.utils.arrayify(proof));
+  console.log(proof);
+  console.log(sign);
 
 
   console.log("DONE!");
