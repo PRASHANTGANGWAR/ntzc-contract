@@ -4,8 +4,7 @@ const { expect } = require("chai");
 describe("Manager tests", function () {
   it("Delegate approve", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
+    const bytes32hex = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -33,7 +32,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         aprfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(1 * 1e8),
         td.address,
         BigInt(100 * 1e8)
@@ -43,7 +42,7 @@ describe("Manager tests", function () {
     await td.preAuthorizedApproval(
       aprhash,
       aprsig,
-      hexExample,
+      bytes32hex,
       BigInt(1 * 1e8),
       BigInt(100 * 1e8)
     );
@@ -55,8 +54,7 @@ describe("Manager tests", function () {
 
   it("Should revert if broadcaster is not a manager", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
+    const bytes32hex = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -84,7 +82,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         aprfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(1 * 1e8),
         td.address,
         BigInt(100 * 1e8)
@@ -97,7 +95,7 @@ describe("Manager tests", function () {
         .preAuthorizedApproval(
           aprhash,
           aprsig,
-          hexExample,
+          bytes32hex,
           BigInt(1 * 1e8),
           BigInt(100 * 1e8)
         )
@@ -106,10 +104,8 @@ describe("Manager tests", function () {
 
   it("Delegate transfer", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
-    const hexExample2 =
-      "0x0000000000000000000000000000000000000000000000000000000000000002";
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes32hex2 = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -138,7 +134,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         aprfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(1 * 1e8),
         td.address,
         BigInt(1000 * 1e8)
@@ -148,7 +144,7 @@ describe("Manager tests", function () {
     await td.preAuthorizedApproval(
       aprhash,
       aprsig,
-      hexExample,
+      bytes32hex,
       BigInt(1 * 1e8),
       BigInt(1000 * 1e8)
     );
@@ -158,7 +154,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         trfuncCode,
-        hexExample2,
+        bytes32hex2,
         BigInt(1 * 1e8),
         signers[3].address,
         BigInt(1000 * 1e8)
@@ -168,7 +164,7 @@ describe("Manager tests", function () {
     await td.preAuthorizedTransfer(
       trhash,
       trsig,
-      hexExample2,
+      bytes32hex2,
       BigInt(1 * 1e8),
       signers[3].address,
       BigInt(1000 * 1e8)
@@ -184,10 +180,8 @@ describe("Manager tests", function () {
 
   it("Should revert if delegate transfer exceeded allowance", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
-    const hexExample2 =
-      "0x0000000000000000000000000000000000000000000000000000000000000002";
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes32hex2 = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -216,7 +210,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         aprfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(1 * 1e8),
         td.address,
         BigInt(1000 * 1e8)
@@ -226,7 +220,7 @@ describe("Manager tests", function () {
     await td.preAuthorizedApproval(
       aprhash,
       aprsig,
-      hexExample,
+      bytes32hex,
       BigInt(1 * 1e8),
       BigInt(1000 * 1e8)
     );
@@ -236,7 +230,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         trfuncCode,
-        hexExample2,
+        bytes32hex2,
         BigInt(1 * 1e8),
         signers[3].address,
         BigInt(2000 * 1e8)
@@ -247,7 +241,7 @@ describe("Manager tests", function () {
       td.preAuthorizedTransfer(
         trhash,
         trsig,
-        hexExample2,
+        bytes32hex2,
         BigInt(1 * 1e8),
         signers[3].address,
         BigInt(2000 * 1e8)
@@ -257,10 +251,8 @@ describe("Manager tests", function () {
 
   it("Should revert if manager calls different data than user signed", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
-    const hexExample2 =
-      "0x0000000000000000000000000000000000000000000000000000000000000002";
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes32hex2 = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -289,7 +281,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         aprfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(1 * 1e8),
         td.address,
         BigInt(1000 * 1e8)
@@ -299,7 +291,7 @@ describe("Manager tests", function () {
     await td.preAuthorizedApproval(
       aprhash,
       aprsig,
-      hexExample,
+      bytes32hex,
       BigInt(1 * 1e8),
       BigInt(1000 * 1e8)
     );
@@ -309,7 +301,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         trfuncCode,
-        hexExample2,
+        bytes32hex2,
         BigInt(1 * 1e8),
         signers[3].address,
         BigInt(2000 * 1e8)
@@ -320,7 +312,7 @@ describe("Manager tests", function () {
       td.preAuthorizedTransfer(
         trhash,
         trsig,
-        hexExample2,
+        bytes32hex2,
         BigInt(1000 * 1e8),
         signers[5].address,
         BigInt(2000 * 1e8)
@@ -330,10 +322,8 @@ describe("Manager tests", function () {
 
   it("Buy without signature should revert if amount exceed buy limit", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
-    const hexExample2 =
-      "0x0000000000000000000000000000000000000000000000000000000000000002";
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes32hex2 = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -367,10 +357,8 @@ describe("Manager tests", function () {
 
   it("Buy with manager signature, should revert if signer or caller aren't managers", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
-    const hexExample2 =
-      "0x0000000000000000000000000000000000000000000000000000000000000002";
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes32hex2 = ethers.utils.randomBytes(32);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -400,7 +388,7 @@ describe("Manager tests", function () {
       .connect(signers[1])
       .getProof(
         buyfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(0 * 1e8),
         signers[2].address,
         BigInt(1000 * 1e8)
@@ -413,7 +401,7 @@ describe("Manager tests", function () {
       td.buyGoldWithSignature(
         buyhash,
         buysigWrong,
-        hexExample,
+        bytes32hex,
         signers[2].address,
         BigInt(1000 * 1e8)
       )
@@ -425,7 +413,7 @@ describe("Manager tests", function () {
     await td.buyGoldWithSignature(
       buyhash,
       buysigTrue,
-      hexExample,
+      bytes32hex,
       signers[2].address,
       BigInt(1000 * 1e8)
     );
@@ -433,8 +421,8 @@ describe("Manager tests", function () {
 
   it("Delegate sell", async function () {
     const signers = await ethers.getSigners();
-    const hexExample =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes16Example = ethers.utils.randomBytes(16);
 
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
@@ -465,7 +453,7 @@ describe("Manager tests", function () {
       .connect(signers[2])
       .getProof(
         sellfuncCode,
-        hexExample,
+        bytes32hex,
         BigInt(0 * 1e8),
         td.address,
         BigInt(1000 * 1e8)
@@ -478,14 +466,74 @@ describe("Manager tests", function () {
     await td.preAuthorizedSell(
       sellhash,
       sellsig,
-      hexExample,
+      bytes32hex,
       0,
-      BigInt(1000 * 1e8)
+      BigInt(1000 * 1e8),
+      bytes16Example
     );
 
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(BigInt(0));
     expect(BigInt(await azx.balanceOf(td.address))).to.equal(
       BigInt(1000 * 1e8)
     );
+
+    await td.processSaleRequest(bytes16Example, true)
+  });
+
+  it("Sale request cancel", async function () {
+    const signers = await ethers.getSigners();
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const bytes16Example = ethers.utils.randomBytes(16);
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      signers[0].address,
+      signers[0].address,
+      signers[0].address,
+    ]);
+    await azx.deployed();
+    await azx.mintGold(BigInt(50000 * 1e8), [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+
+    const TD = await ethers.getContractFactory("Manager");
+    const td = await upgrades.deployProxy(TD, []);
+    await td.deployed();
+    await td.updateAZX(azx.address);
+    await td.updateManagers(signers[1].address, true);
+
+    await azx.updateFreeOfFeeContracts(signers[0].address, true);
+    await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
+    await azx.updateManager(td.address);
+    await azx.connect(signers[2]).approve(td.address, BigInt(1000 * 1e8));
+
+    const sellfuncCode = await td.methodWord_sell();
+    const sellhash = await td
+      .connect(signers[2])
+      .getProof(
+        sellfuncCode,
+        bytes32hex,
+        BigInt(0 * 1e8),
+        td.address,
+        BigInt(1000 * 1e8)
+      );
+
+    const sellsig = await signers[2].signMessage(
+      ethers.utils.arrayify(sellhash)
+    );
+
+    await td.preAuthorizedSell(
+      sellhash,
+      sellsig,
+      bytes32hex,
+      0,
+      BigInt(1000 * 1e8),
+      bytes16Example
+    );
+
+    await td.processSaleRequest(bytes16Example, false);
+    expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(BigInt(1000 * 1e8));
   });
 });

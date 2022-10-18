@@ -13,11 +13,20 @@ contract Manager is Initializable, OwnableUpgradeable {
 
     mapping(address => bool) public managers;
     mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
+    mapping(bytes16 => SaleRequest) public saleRequests;
 
     bytes4 public methodWord_transfer;
     bytes4 public methodWord_approve;
     bytes4 public methodWord_buy;
     bytes4 public methodWord_sell;
+
+    struct SaleRequest {
+        bytes32 saleId;
+        address seller;
+        uint256 amount;
+        bool isApproved;
+        bool isProcessed;
+    }
 
     event Buy(address indexed buyer, uint256 amount);
     event BuyWithSignature(
@@ -26,7 +35,7 @@ contract Manager is Initializable, OwnableUpgradeable {
         address caller,
         uint256 amount
     );
-    event preAuthorizedAction(
+    event PreAuthorizedAction(
         string actionType,
         address signer,
         address manager,
@@ -34,6 +43,12 @@ contract Manager is Initializable, OwnableUpgradeable {
         uint256 amount,
         uint256 networkFee
     );
+    event SaleRequestCreated(
+        bytes16 saleId,
+        address indexed seller,
+        uint256 amount
+    );
+    event SaleRequestProcessed(bytes16 saleId, address admin, bool isApproved);
 
     modifier onlyManager() {
         require(
@@ -252,7 +267,7 @@ contract Manager is Initializable, OwnableUpgradeable {
 
         IAUZToken(azx).delegateApprove(signer, amount, msg.sender, networkFee);
 
-        emit preAuthorizedAction(
+        emit PreAuthorizedAction(
             "Approve",
             signer,
             msg.sender,
@@ -265,7 +280,7 @@ contract Manager is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Delegated sell AZX. Gas fee will be paid by relayer
+     * @notice Delegated sell of AZX (takes tokens and creates request). Gas fee will be paid by relayer
      * @param message The message that user signed
      * @param signature Signature
      * @param token The unique token for each delegated function
@@ -277,7 +292,8 @@ contract Manager is Initializable, OwnableUpgradeable {
         bytes memory signature,
         bytes32 token,
         uint256 networkFee,
-        uint256 amount
+        uint256 amount,
+        bytes16 saleId
     ) public onlyManager returns (bool) {
         bytes32 proof = getProof(
             methodWord_sell,
@@ -295,8 +311,15 @@ contract Manager is Initializable, OwnableUpgradeable {
             networkFee,
             false
         );
+        saleRequests[saleId] = SaleRequest(
+            saleId,
+            signer,
+            amount,
+            false,
+            false
+        );
 
-        emit preAuthorizedAction(
+        emit PreAuthorizedAction(
             "Sell",
             signer,
             msg.sender,
@@ -304,6 +327,7 @@ contract Manager is Initializable, OwnableUpgradeable {
             amount,
             networkFee
         );
+        emit SaleRequestCreated(saleId, signer, amount);
 
         return true;
     }
@@ -342,7 +366,7 @@ contract Manager is Initializable, OwnableUpgradeable {
             true
         );
 
-        emit preAuthorizedAction(
+        emit PreAuthorizedAction(
             "Transfer",
             signer,
             msg.sender,
@@ -352,5 +376,36 @@ contract Manager is Initializable, OwnableUpgradeable {
         );
 
         return true;
+    }
+
+    /**
+     * @notice Admins approving of sale request
+     * @param saleId ID of the sale request
+     * @param isApproved Admins decision about the request
+     */
+    function processSaleRequest(bytes16 saleId, bool isApproved)
+        external
+        onlyManager
+    {
+        require(
+            saleRequests[saleId].isProcessed == false,
+            "Manager: Request is already processed"
+        );
+        require(
+            saleRequests[saleId].seller != address(0),
+            "Manager: Request is not exist"
+        );
+        if (!isApproved) {
+            require(
+                IAUZToken(azx).transfer(
+                    saleRequests[saleId].seller,
+                    saleRequests[saleId].amount
+                ),
+                "Manager: Transfer error"
+            );
+        }
+        saleRequests[saleId].isProcessed = true;
+        saleRequests[saleId].isApproved = isApproved;
+        emit SaleRequestProcessed(saleId, msg.sender, isApproved);
     }
 }
