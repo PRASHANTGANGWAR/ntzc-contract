@@ -175,7 +175,7 @@ contract Manager is Initializable, OwnableUpgradeable {
      * @param networkFee The fee that will be paid to relayer for gas fee he spends
      * @param to The recipient or spender
      * @param amount The amount to be transferred
-     * @return Bool value
+     * @return Hash for signing
      */
     function getProof(
         bytes4 methodHash,
@@ -194,6 +194,22 @@ contract Manager is Initializable, OwnableUpgradeable {
                 to,
                 amount
             )
+        );
+        return proof;
+    }
+
+    /**
+     * @notice Get proof for sale requests
+     * @param saleId Sale ID
+     * @return Hash for managers signing
+     */
+    function getSaleApproveProof(bytes16 saleId, bool isApproved)
+        public
+        view
+        returns (bytes32)
+    {
+        bytes32 proof = keccak256(
+            abi.encodePacked(getChainID(), saleId, isApproved)
         );
         return proof;
     }
@@ -384,10 +400,14 @@ contract Manager is Initializable, OwnableUpgradeable {
      * @param saleId ID of the sale request
      * @param isApproved Admins decision about the request
      */
-    function processSaleRequest(bytes16 saleId, bool isApproved)
-        external
-        onlyManager
-    {
+    function processSaleRequest(
+        bytes16 saleId,
+        bool isApproved,
+        bytes memory signature
+    ) external onlyManager {
+        bytes32 message = getSaleApproveProof(saleId, isApproved);
+        address signer = getSigner(message, signature);
+        require(managers[signer], "Manager: Signer is not manager");
         require(
             saleRequests[saleId].isProcessed == false,
             "Manager: Request is already processed"

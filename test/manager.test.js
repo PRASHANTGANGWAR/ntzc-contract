@@ -476,8 +476,9 @@ describe("Manager tests", function () {
     expect(BigInt(await azx.balanceOf(td.address))).to.equal(
       BigInt(1000 * 1e8)
     );
-
-    await td.processSaleRequest(bytes16Example, true)
+    const requestProof = await td.getSaleApproveProof(bytes16Example, true);
+    const signature = await signers[1].signMessage(ethers.utils.arrayify(requestProof));
+    await td.processSaleRequest(bytes16Example, true, signature)
   });
 
   it("Sale request cancel", async function () {
@@ -532,8 +533,10 @@ describe("Manager tests", function () {
       BigInt(1000 * 1e8),
       bytes16Example
     );
-
-    await td.processSaleRequest(bytes16Example, false);
+      
+    const requestProof = await td.getSaleApproveProof(bytes16Example, false);
+    const signature = await signers[1].signMessage(ethers.utils.arrayify(requestProof));
+    await td.processSaleRequest(bytes16Example, false, signature);
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(BigInt(1000 * 1e8));
   });
 });
