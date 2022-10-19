@@ -397,6 +397,7 @@ contract Manager is Initializable, OwnableUpgradeable {
 
     /**
      * @notice Admins approving of sale request
+     * @dev Signer of signature and trx sender must be different and both must be admins
      * @param saleId ID of the sale request
      * @param isApproved Admins decision about the request
      */
@@ -408,6 +409,7 @@ contract Manager is Initializable, OwnableUpgradeable {
         bytes32 message = getSaleApproveProof(saleId, isApproved);
         address signer = getSigner(message, signature);
         require(managers[signer], "Manager: Signer is not manager");
+        require(signer != msg.sender, "Manager: Signer must be another manager");
         require(
             saleRequests[saleId].isProcessed == false,
             "Manager: Request is already processed"
