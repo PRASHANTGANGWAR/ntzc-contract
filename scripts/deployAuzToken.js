@@ -45,24 +45,24 @@ async function main() {
   //   contract: "contracts/manager/Manager.sol:Manager",
   // });
     
-  // const Manager = await ethers.getContractFactory("Manager");
-  // const manager = await upgrades.upgradeProxy("0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc", Manager);
-  // manager.deployed();
-  // await waitBlocks(5);
-  // const managerImplAddress = await getImplementationAddress(
-  //   ethers.provider,
-  //   manager.address
-  // );
-  // console.log(
-  //   `Manager deployed to: ${manager.address} => ${managerImplAddress}`
-  // );
-  // await run("verify:verify", {
-  //   address: managerImplAddress,
-  //   contract: "contracts/manager/Manager.sol:Manager",
-  // });
+  const Manager = await ethers.getContractFactory("Manager");
+  const manager = await upgrades.upgradeProxy("0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc", Manager);
+  manager.deployed();
+  await waitBlocks(5);
+  const managerImplAddress = await getImplementationAddress(
+    ethers.provider,
+    manager.address
+  );
+  console.log(
+    `Manager deployed to: ${manager.address} => ${managerImplAddress}`
+  );
+  await run("verify:verify", {
+    address: managerImplAddress,
+    contract: "contracts/manager/Manager.sol:Manager",
+  });
 
-  const azx = await ethers.getContractAt("AUZToken", "0xb2E9c5B31EA9B861DD4FC6569F37D1B3B11905Af");
-  const manager = await ethers.getContractAt("Manager", "0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc");
+  // const azx = await ethers.getContractAt("AUZToken", "0xb2E9c5B31EA9B861DD4FC6569F37D1B3B11905Af");
+  // const manager = await ethers.getContractAt("Manager", "0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc");
 
   // await azx.mintGold(BigInt(50000 * 1e8), ["wdfqf78qef8f"]);
   // await manager.updateAZX(azx.address);
@@ -96,12 +96,12 @@ async function main() {
   // console.log(sign);
     
   //console.log(await manager.methodWord_sell())
-  const hex = "0xefc0e08a720dcfecd57bc3abd3e37d02cba58f45a5b8ba80ea2720e6d050e37a";
-  const methodTransfer = "0x00000000";
-  const proof = await manager.getProof(methodTransfer, hex, BigInt(1 * 1e8), "0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc", BigInt(5 * 1e8));
-  const sign = await signers[0].signMessage(ethers.utils.arrayify(proof));
-  console.log(proof);
-  console.log(sign);
+  // const hex = "0xefc0e08a720dcfecd57bc3abd3e37d02cba58f45a5b8ba80ea2720e6d050e37a";
+  // const methodTransfer = "0x00000000";
+  // const proof = await manager.getProof(methodTransfer, hex, BigInt(1 * 1e8), "0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc", BigInt(5 * 1e8));
+  // const sign = await signers[0].signMessage(ethers.utils.arrayify(proof));
+  // console.log(proof);
+  // console.log(sign);
 
 
   console.log("DONE!");

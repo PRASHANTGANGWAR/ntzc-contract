@@ -13,12 +13,13 @@ contract Manager is Initializable, OwnableUpgradeable {
 
     mapping(address => bool) public managers;
     mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
-    mapping(bytes16 => SaleRequest) public saleRequests;
 
     bytes4 public methodWord_transfer;
     bytes4 public methodWord_approve;
     bytes4 public methodWord_buy;
     bytes4 public methodWord_sell;
+
+    mapping(bytes16 => SaleRequest) public saleRequests;
 
     struct SaleRequest {
         bytes32 saleId;
