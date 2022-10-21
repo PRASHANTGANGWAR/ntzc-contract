@@ -12,6 +12,15 @@ interface IAUZToken is IERC20 {
         bool feeMode
     ) external returns (bool);
 
+    function delegateTransfer(
+        address sender,
+        address recipient,
+        uint256 amount,
+        address broadcaster,
+        uint256 networkFee,
+        bool feeMode
+    ) external returns (bool);
+
     function delegateApprove(
         address owner,
         uint256 amount,

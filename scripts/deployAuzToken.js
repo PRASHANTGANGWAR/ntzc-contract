@@ -5,7 +5,7 @@ const { waitBlocks } = require("../utils/blockWaiter");
 async function main() {
   const signers = await ethers.getSigners();
 
-  // 0xb2E9c5B31EA9B861DD4FC6569F37D1B3B11905Af => 0x23eB94d988Efeeff1F6E8Af1C6C88beDeF5f38C3
+  // 0xb2E9c5B31EA9B861DD4FC6569F37D1B3B11905Af => 0x200176793BB326BbcF4C02a4517aC92c796a71Ad
 
   // const AUZ = await ethers.getContractFactory("AUZToken");
   // const auz = await upgrades.deployProxy(AUZ, [
@@ -27,7 +27,24 @@ async function main() {
   //   contract: "contracts/token/AUZToken.sol:AUZToken",
   // });
 
-  //  0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc => 0xa67A6B4200B16d53843d09F18200d1E1Ad6852c2
+  // const AUZ = await ethers.getContractFactory("AUZToken");
+  // const auz = await upgrades.upgradeProxy("0xb2E9c5B31EA9B861DD4FC6569F37D1B3B11905Af", AUZ);
+  // auz.deployed();
+  // await waitBlocks(5);
+  // const auzImplAddress = await getImplementationAddress(
+  //   ethers.provider,
+  //   auz.address
+  // );
+  // console.log(
+  //   `Token deployed to: ${auz.address} => ${auzImplAddress}`
+  // );
+  // await run("verify:verify", {
+  //   address: auzImplAddress,
+  //   contract: "contracts/token/AUZToken.sol:AUZToken",
+  // });
+
+
+  //  0xec63261A6DE7D81dd0c637Ba493aB5957F9143Bc => 0x010c57FEc1Bef921a3Ba6C7A64549F48bC30098C
 
   // const Manager = await ethers.getContractFactory("Manager");
   // const manager = await upgrades.deployProxy(Manager, []);

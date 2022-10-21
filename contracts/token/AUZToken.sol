@@ -345,6 +345,36 @@ contract AUZToken is
     }
 
     /**
+     * @notice Delegate transfer for manager contract only.
+     * @dev overriden Function of the openzeppelin ERC20 contract
+     * @param recipient receiver's address
+     * @param sender transfer token from account
+     * @param amount The amount to be transferred
+     */
+    function delegateTransfer(
+        address sender,
+        address recipient,
+        uint256 amount,
+        address broadcaster,
+        uint256 networkFee,
+        bool feeMode
+    ) external whenNotPaused returns (bool) {
+        require(
+            manager == msg.sender,
+            "AUZToken: Only transfers manager can call this function"
+        );
+        uint256 currentAllowance = allowance(sender, manager);
+        require(
+            currentAllowance >= amount,
+            "ERC20: transfer amount exceeds allowance"
+        );
+        _privateTransfer(sender, broadcaster, networkFee, false);
+        _privateTransfer(sender, recipient, amount, feeMode);
+        emit DelegateTransfer(tx.origin, sender, recipient, amount);
+        return true;
+    }
+
+    /**
      * @notice Delegate transferFrom for manager contract only.
      * @dev overriden Function of the openzeppelin ERC20 contract
      * @param recipient receiver's address

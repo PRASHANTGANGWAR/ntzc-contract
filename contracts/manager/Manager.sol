@@ -374,7 +374,7 @@ contract Manager is Initializable, OwnableUpgradeable {
             amount
         );
         address signer = preAuthValidations(proof, message, token, signature);
-        IAUZToken(azx).delegateTransferFrom(
+        IAUZToken(azx).delegateTransfer(
             signer,
             to,
             amount,
