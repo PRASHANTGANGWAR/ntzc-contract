@@ -3,23 +3,15 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../token/IAUZToken.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../access/IAccess.sol";
 
-contract Manager is Initializable, OwnableUpgradeable {
+contract HotWallet is Initializable {
     uint256 public BUY_LIMIT;
     address public azx;
+    address public accessControl;
 
-    mapping(address => bool) public managers;
-    mapping(address => mapping(bytes32 => bool)) public tokenUsed; // mapping to track token is used or not
-
-    bytes4 public methodWord_transfer;
-    bytes4 public methodWord_approve;
-    bytes4 public methodWord_buy;
-    bytes4 public methodWord_sell;
-
-    mapping(bytes16 => SaleRequest) public saleRequests;
+    mapping(bytes32 => SaleRequest) public saleRequests; // mapping to track sale requests
 
     struct SaleRequest {
         bytes32 saleId;
@@ -36,7 +28,7 @@ contract Manager is Initializable, OwnableUpgradeable {
         address caller,
         uint256 amount
     );
-    event PreAuthorizedAction(
+    event TokenSold(
         string actionType,
         address signer,
         address manager,
@@ -45,29 +37,32 @@ contract Manager is Initializable, OwnableUpgradeable {
         uint256 networkFee
     );
     event SaleRequestCreated(
-        bytes16 saleId,
+        bytes32 saleId,
         address indexed seller,
         uint256 amount
     );
-    event SaleRequestProcessed(bytes16 saleId, address admin, bool isApproved);
+    event SaleRequestProcessed(address admin, bytes32 saleId, bool isApproved);
 
-    modifier onlyManager() {
+    modifier onlyOwner() {
         require(
-            managers[msg.sender] || msg.sender == owner(),
-            "Manager: Only managers is allowed"
+            IAccess(accessControl).isOwner(msg.sender),
+            "AUZToken: Only owner is allowed"
         );
         _;
     }
 
-    function initialize() external initializer {
-        __Ownable_init();
+    modifier onlyManager() {
+        require(
+            IAccess(accessControl).isSender(msg.sender),
+            "HotWallet: Only managers is allowed"
+        );
+        _;
+    }
 
-        managers[msg.sender] = true;
+    function initialize(address _azx, address _accsess) external initializer {
+        accessControl = _accsess;
+        azx = _azx;
         BUY_LIMIT = 5000 * 10**8;
-        methodWord_transfer = bytes4(keccak256("transfer(address,uint256)"));
-        methodWord_approve = bytes4(keccak256("approve(address,uint256)"));
-        methodWord_buy = bytes4(keccak256("buy(address,uint256)"));
-        methodWord_sell = bytes4(keccak256("sell(address,uint256)"));
     }
 
     /**
@@ -80,29 +75,6 @@ contract Manager is Initializable, OwnableUpgradeable {
             id := chainid()
         }
         return id;
-    }
-
-    /**
-     * @notice Update address of AZX token
-     * @dev Only owner can call
-     * @param _azx The AZX contract address
-     */
-    function updateAZX(address _azx) public onlyOwner {
-        require(_azx != address(0), "Manager: Zero address is not allowed");
-        azx = _azx;
-    }
-
-    /**
-     * @notice Update managers roles for addresses
-     * @dev Only owner can call
-     * @param _manager The wallet of the user
-     * @param _isManager Bool variable that indicates is wallet is manager or not
-     */
-    function updateManagers(address _manager, bool _isManager)
-        external
-        onlyOwner
-    {
-        managers[_manager] = _isManager;
     }
 
     /**
@@ -127,91 +99,7 @@ contract Manager is Initializable, OwnableUpgradeable {
         uint256 _amount
     ) external onlyOwner {
         require(_to != address(0), "HotWallet: zero address is not allowed");
-        IAUZToken(_token).transfer(_to, _amount);
-    }
-
-    /**
-     * @notice Validates the message and signature
-     * @param proof The message that was expected to be signed by user
-     * @param message The message that user signed
-     * @param signature Signature
-     * @param token The unique token for each delegated function
-     * @return address Signer of message
-     */
-    function preAuthValidations(
-        bytes32 proof,
-        bytes32 message,
-        bytes32 token,
-        bytes memory signature
-    ) private returns (address) {
-        address signer = getSigner(message, signature);
-        require(signer != address(0), "Manager: Zero address not allowed");
-        require(!tokenUsed[signer][token], "Manager: Token already used");
-        require(proof == message, "Manager: Invalid proof");
-        tokenUsed[signer][token] = true;
-        return signer;
-    }
-
-    /**
-     * @notice Find signer
-     * @param message The message that user signed
-     * @param signature Signature
-     * @return address Signer of message
-     */
-    function getSigner(bytes32 message, bytes memory signature)
-        public
-        pure
-        returns (address)
-    {
-        message = ECDSA.toEthSignedMessageHash(message);
-        address signer = ECDSA.recover(message, signature);
-        return signer;
-    }
-
-    /**
-     * @notice Get the message to be signed in case of delegated transfer/approvals
-     * @param methodHash The method hash for which delegate action in to be performed
-     * @param token The unique token for each delegated function
-     * @param networkFee The fee that will be paid to relayer for gas fee he spends
-     * @param to The recipient or spender
-     * @param amount The amount to be transferred
-     * @return Hash for signing
-     */
-    function getProof(
-        bytes4 methodHash,
-        bytes32 token,
-        uint256 networkFee,
-        address to,
-        uint256 amount
-    ) public view returns (bytes32) {
-        bytes32 proof = keccak256(
-            abi.encodePacked(
-                getChainID(),
-                bytes4(methodHash),
-                address(this),
-                token,
-                networkFee,
-                to,
-                amount
-            )
-        );
-        return proof;
-    }
-
-    /**
-     * @notice Get proof for sale requests
-     * @param saleId Sale ID
-     * @return Hash for managers signing
-     */
-    function getSaleApproveProof(bytes16 saleId, bool isApproved)
-        public
-        view
-        returns (bytes32)
-    {
-        bytes32 proof = keccak256(
-            abi.encodePacked(getChainID(), saleId, isApproved)
-        );
-        return proof;
+        IERC20(_token).transfer(_to, _amount);
     }
 
     /**
@@ -221,113 +109,92 @@ contract Manager is Initializable, OwnableUpgradeable {
      * @param _amount Amount of AZX
      */
     function buyGold(address _buyer, uint256 _amount) external onlyManager {
-        require(_amount <= BUY_LIMIT, "Manager: amount exceeds buy limit");
-        require(_buyer != address(0), "Manager: zero address is not allowed");
-        IAUZToken(azx).transfer(_buyer, _amount);
+        require(_amount <= BUY_LIMIT, "HotWallet: amount exceeds buy limit");
+        require(_buyer != address(0), "HotWallet: zero address is not allowed");
+        IERC20(azx).transfer(_buyer, _amount);
 
         emit Buy(_buyer, _amount);
     }
 
     /**
+     * @notice Get proof for admin for buy with signature
+     */
+    function getBuyProof(
+        bytes32 token,
+        address buyer,
+        uint256 amount
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, buyer, amount)
+        );
+    }
+
+    /**
      * @notice Send AZX tokens from this contract to user without limit and with second manager signature
      * @dev Only managers can call
-     * @param message The message that user signed
      * @param signature Signature
      * @param token The unique token for each delegated function
      * @param buyer The fee that will be paid to relayer for gas fee he spends
      * @param amount The amount to be allowed
      */
     function buyGoldWithSignature(
-        bytes32 message,
         bytes memory signature,
         bytes32 token,
         address buyer,
         uint256 amount
     ) external onlyManager {
-        bytes32 proof = getProof(methodWord_buy, token, 0, buyer, amount);
-        address signer = preAuthValidations(proof, message, token, signature);
-        require(managers[signer], "Manager: Signer is not manager");
-        require(
-            signer != msg.sender,
-            "Manager: Signer must be another manager"
+        bytes32 message = getBuyProof(token, buyer, amount);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
         );
-        IAUZToken(azx).transfer(buyer, amount);
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "HotWallet: Signer is not manager"
+        );
+        IERC20(azx).transfer(buyer, amount);
 
         emit BuyWithSignature(buyer, signer, msg.sender, amount);
     }
 
     /**
-     * @notice Delegated approval. Gas fee will be paid by relayer
-     * @dev Only approve, increaseApproval and decreaseApproval can be delegated
-     * @param message The message that user signed
-     * @param signature Signature
-     * @param token The unique token for each delegated function
-     * @param networkFee The fee that will be paid to relayer for gas fee he spends
-     * @param amount The amount to be allowed
-     * @return Bool value
+     * @notice Get proof for user for signing sale operations of its tokens
      */
-    function preAuthorizedApproval(
-        bytes32 message,
-        bytes memory signature,
+    function getSaleProof(
         bytes32 token,
-        uint256 networkFee,
+        address seller,
         uint256 amount
-    ) public onlyManager returns (bool) {
-        bytes32 proof = getProof(
-            methodWord_approve,
-            token,
-            networkFee,
-            address(this),
-            amount
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, seller, amount)
         );
-        address signer = preAuthValidations(proof, message, token, signature);
-
-        IAUZToken(azx).delegateApprove(signer, amount, msg.sender, networkFee);
-
-        emit PreAuthorizedAction(
-            "Approve",
-            signer,
-            msg.sender,
-            address(this),
-            amount,
-            networkFee
-        );
-
-        return true;
     }
 
     /**
      * @notice Delegated sell of AZX (takes tokens and creates request). Gas fee will be paid by relayer
-     * @param message The message that user signed
      * @param signature Signature
      * @param token The unique token for each delegated function
      * @param networkFee The fee that will be paid to relayer for gas fee he spends
      * @param amount The array of amounts to be selled
      */
     function preAuthorizedSell(
-        bytes32 message,
         bytes memory signature,
         bytes32 token,
-        uint256 networkFee,
+        address seller,
         uint256 amount,
-        bytes16 saleId
+        bytes32 saleId,
+        uint256 networkFee
     ) public onlyManager returns (bool) {
-        bytes32 proof = getProof(
-            methodWord_sell,
+        bytes32 message = getSaleProof(token, seller, amount);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
             token,
-            networkFee,
-            address(this),
-            amount
+            signature
         );
-        address signer = preAuthValidations(proof, message, token, signature);
-        IAUZToken(azx).delegateTransferFrom(
-            signer,
-            address(this),
-            amount,
-            msg.sender,
-            networkFee,
-            false
-        );
+        require(seller == signer, "HotWallet: Signer is not seller");
+        IERC20(azx).transferFrom(seller, msg.sender, networkFee);
+        IERC20(azx).transferFrom(seller, address(this), amount);
         saleRequests[saleId] = SaleRequest(
             saleId,
             signer,
@@ -335,64 +202,22 @@ contract Manager is Initializable, OwnableUpgradeable {
             false,
             false
         );
-
-        emit PreAuthorizedAction(
-            "Sell",
-            signer,
-            msg.sender,
-            address(this),
-            amount,
-            networkFee
-        );
-        emit SaleRequestCreated(saleId, signer, amount);
+        emit SaleRequestCreated(saleId, seller, amount);
 
         return true;
     }
 
     /**
-     * @notice Delegated transfer. Gas fee will be paid by relayer
-     * @param message The message that user signed
-     * @param signature Signature
-     * @param token The unique token for each delegated function
-     * @param networkFee The fee that will be paid to relayer for gas fee he spends
-     * @param to The array of recipients
-     * @param amount The array of amounts to be transferred
+     * @notice Get proof for admin for process sale request
      */
-    function preAuthorizedTransfer(
-        bytes32 message,
-        bytes memory signature,
+    function getSaleProcessProof(
         bytes32 token,
-        uint256 networkFee,
-        address to,
-        uint256 amount
-    ) public onlyManager returns (bool) {
-        bytes32 proof = getProof(
-            methodWord_transfer,
-            token,
-            networkFee,
-            to,
-            amount
+        bytes32 saleId,
+        bool isApproved
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, saleId, isApproved)
         );
-        address signer = preAuthValidations(proof, message, token, signature);
-        IAUZToken(azx).delegateTransfer(
-            signer,
-            to,
-            amount,
-            msg.sender,
-            networkFee,
-            true
-        );
-
-        emit PreAuthorizedAction(
-            "Transfer",
-            signer,
-            msg.sender,
-            to,
-            amount,
-            networkFee
-        );
-
-        return true;
     }
 
     /**
@@ -402,33 +227,40 @@ contract Manager is Initializable, OwnableUpgradeable {
      * @param isApproved Admins decision about the request
      */
     function processSaleRequest(
-        bytes16 saleId,
-        bool isApproved,
-        bytes memory signature
+        bytes memory signature,
+        bytes32 token,
+        bytes32 saleId,
+        bool isApproved
     ) external onlyManager {
-        bytes32 message = getSaleApproveProof(saleId, isApproved);
-        address signer = getSigner(message, signature);
-        require(managers[signer], "Manager: Signer is not manager");
-        require(signer != msg.sender, "Manager: Signer must be another manager");
+        bytes32 message = getSaleProcessProof(token, saleId, isApproved);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "HotWallet: Signer is not manager"
+        );
         require(
             saleRequests[saleId].isProcessed == false,
-            "Manager: Request is already processed"
+            "HotWallet: Request is already processed"
         );
         require(
             saleRequests[saleId].seller != address(0),
-            "Manager: Request is not exist"
+            "HotWallet: Request is not exist"
         );
         if (!isApproved) {
             require(
-                IAUZToken(azx).transfer(
+                IERC20(azx).transfer(
                     saleRequests[saleId].seller,
                     saleRequests[saleId].amount
                 ),
-                "Manager: Transfer error"
+                "HotWallet: Transfer error"
             );
         }
         saleRequests[saleId].isProcessed = true;
         saleRequests[saleId].isApproved = isApproved;
-        emit SaleRequestProcessed(saleId, msg.sender, isApproved);
+        emit SaleRequestProcessed(signer, saleId, isApproved);
     }
 }

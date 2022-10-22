@@ -3,10 +3,10 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "../access/IAccess.sol";
 
 /**
  * @title AUZToken
@@ -14,12 +14,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
  * @notice Contract for the AUZToken
  * @dev All function calls are currently implemented without side effects
  */
-contract AUZToken is
-    Initializable,
-    OwnableUpgradeable,
-    ERC20Upgradeable,
-    PausableUpgradeable
-{
+contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
     // attach library functions
     using AddressUpgradeable for address;
 
@@ -41,17 +36,14 @@ contract AUZToken is
     uint256 public TRANSFER_FEE_PERCENT; // commission percentage on transfer
     uint256 public PERCENT_COEFICIENT; // denominator for percentage calculation
 
-    // Minter address
-    address public minter;
-
     // Address at which fees transferred
     address public feeWallet;
 
     // Tokens minted in this wallet
     address public sellingWallet;
 
-    // Contract wich uses for delegate operations
-    address public manager;
+    // Access control contract
+    address public accessControl;
 
     //Proofs for gold mints
     mapping(uint256 => string) public mintingProofs;
@@ -67,16 +59,14 @@ contract AUZToken is
 
     function initialize(
         address _sellingWallet,
-        address _minter,
-        address _feeWallet
+        address _feeWallet,
+        address _accessControl
     ) external initializer {
         __ERC20_init("AUZToken", "AUZ");
-        __Ownable_init();
         __Pausable_init();
         feeWallet = _feeWallet;
         sellingWallet = _sellingWallet;
-        minter = _minter;
-
+        accessControl = _accessControl;
         decimal = 8;
         MINT_FEE_PERCENT = 0; // 0.000%
         TRANSFER_FEE_PERCENT = 1; // 0.001%
@@ -86,10 +76,26 @@ contract AUZToken is
     ////////////////////////////////////////////////////////////////
     //                 modifiers
     ////////////////////////////////////////////////////////////////
+    modifier onlyOwner() {
+        require(
+            IAccess(accessControl).isOwner(msg.sender),
+            "AUZToken: Only owner is allowed"
+        );
+        _;
+    }
+
     modifier onlyMinter() {
         require(
-            msg.sender == minter || msg.sender == owner(),
+            IAccess(accessControl).isMinter(msg.sender),
             "AUZToken: Only Minter is allowed"
+        );
+        _;
+    }
+
+    modifier onlyManager() {
+        require(
+            IAccess(accessControl).isSender(msg.sender),
+            "Manager: Only managers is allowed"
         );
         _;
     }
@@ -122,31 +128,6 @@ contract AUZToken is
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    /**
-     * @notice Update address of minter
-     * @dev Only owner can call
-     * @param _minter The minter address
-     */
-    function updateMinter(address _minter) public onlyOwner {
-        require(_minter != address(0), "AUZToken: Zero address is not allowed");
-        minter = _minter;
-    }
-
-    /**
-     * @notice Update address which uses for delegate operations
-     * @dev Only owner can call
-     * @param _manager The fee address
-     */
-    function updateManager(address _manager) public onlyOwner {
-        require(
-            _manager != address(0),
-            "AUZToken: Zero address is not allowed"
-        );
-        manager = _manager;
-        freeOfFeeContracts[_manager] = true;
-        allowedContracts[_manager] = true;
     }
 
     /**
@@ -324,79 +305,87 @@ contract AUZToken is
     }
 
     /**
+     * @notice Get message for the users delegate approve and transfer signature
+     */
+    function delegateProof(
+        bytes32 token,
+        address owner,
+        address spender,
+        uint256 amount,
+        uint256 networkFee
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(
+                getChainID(),
+                token,
+                owner,
+                spender,
+                amount,
+                networkFee
+            )
+        );
+    }
+
+    /**
      * @notice Delegate approve for manager contract only.
      * @dev overriden Function of the openzeppelin ERC20 contract
-     * @param owner receiver's address
-     * @param amount The amount to be transferred
+     * @param signature Sign of user who wants to delegate approve
+     * @param owner User who wants to delegate approve
+     * @param spender Contract-spender of user funds
+     * @param amount The amount of allowance
+     * @param networkFee Commission for manager for delegate trx sending
      */
     function delegateApprove(
+        bytes memory signature,
+        bytes32 token,
         address owner,
+        address spender,
         uint256 amount,
-        address broadcaster,
         uint256 networkFee
-    ) external whenNotPaused returns (bool) {
-        require(
-            manager == _msgSender(),
-            "AUZToken: Only transfers manager can call this function"
+    ) external whenNotPaused onlyManager returns (bool) {
+        bytes32 message = delegateProof(
+            token,
+            owner,
+            spender,
+            amount,
+            networkFee
         );
-        _privateTransfer(owner, broadcaster, networkFee, false);
-        _approve(owner, manager, amount);
+        address signer = IAccess(accessControl).preAuthValidations(message, token, signature);
+        require(signer == owner, "Manager: Signer is not owner");
+        _privateTransfer(owner, msg.sender, networkFee, false);
+        _approve(owner, spender, amount);
         return true;
     }
 
     /**
-     * @notice Delegate transfer for manager contract only.
-     * @dev overriden Function of the openzeppelin ERC20 contract
-     * @param recipient receiver's address
-     * @param sender transfer token from account
-     * @param amount The amount to be transferred
+     * @notice Delegate transfer.
+     * @dev only manager can call this function
+     * @param signature Sign of user who wants to delegate approve
+     * @param owner User who wants to delegate approve
+     * @param spender Contract-spender of user funds
+     * @param amount The amount of allowance
+     * @param networkFee Commission for manager for delegate trx sending
      */
     function delegateTransfer(
-        address sender,
-        address recipient,
+        bytes memory signature,
+        bytes32 token,
+        address owner,
+        address spender,
         uint256 amount,
-        address broadcaster,
-        uint256 networkFee,
-        bool feeMode
-    ) external whenNotPaused returns (bool) {
-        require(
-            manager == msg.sender,
-            "AUZToken: Only transfers manager can call this function"
+        uint256 networkFee
+    ) external whenNotPaused onlyManager returns (bool) {
+        bytes32 message = delegateProof(
+            token,
+            owner,
+            spender,
+            amount,
+            networkFee
         );
-        _privateTransfer(sender, broadcaster, networkFee, false);
-        _privateTransfer(sender, recipient, amount, feeMode);
-        emit DelegateTransfer(tx.origin, sender, recipient, amount);
-        return true;
-    }
-
-    /**
-     * @notice Delegate transferFrom for manager contract only.
-     * @dev overriden Function of the openzeppelin ERC20 contract
-     * @param recipient receiver's address
-     * @param sender transfer token from account
-     * @param amount The amount to be transferred
-     */
-    function delegateTransferFrom(
-        address sender,
-        address recipient,
-        uint256 amount,
-        address broadcaster,
-        uint256 networkFee,
-        bool feeMode
-    ) external whenNotPaused returns (bool) {
-        require(
-            manager == msg.sender,
-            "AUZToken: Only transfers manager can call this function"
-        );
-        uint256 currentAllowance = allowance(sender, manager);
-        require(
-            currentAllowance >= amount,
-            "ERC20: transfer amount exceeds allowance"
-        );
-        _approve(sender, _msgSender(), currentAllowance - amount);
-        _privateTransfer(sender, broadcaster, networkFee, false);
-        _privateTransfer(sender, recipient, amount, feeMode);
-        emit DelegateTransfer(tx.origin, sender, recipient, amount);
+        address signer = IAccess(accessControl).preAuthValidations(message, token, signature);
+        require(signer == owner, "Manager: Signer is not owner");
+        _privateTransfer(owner, msg.sender, networkFee, false);
+        _privateTransfer(owner, spender, amount, true);
+        emit DelegateTransfer(msg.sender, owner, spender, amount);
         return true;
     }
 
@@ -453,6 +442,18 @@ contract AUZToken is
         returns (uint256)
     {
         return (_amount * TRANSFER_FEE_PERCENT) / PERCENT_COEFICIENT;
+    }
+
+    /**
+     * @dev ID of the executing chain
+     * @return uint value
+     */
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
     }
 
     /**
