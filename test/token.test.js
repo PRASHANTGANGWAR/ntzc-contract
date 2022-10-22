@@ -8,11 +8,15 @@ describe("Token tests", function () {
     const sellingWallet = signers[1].address;
     const mintAmount = BigInt(50000 * 1e8);
 
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
-      signers[0].address,
+      access.address,
     ]);
     await azx.deployed();
 
@@ -31,11 +35,15 @@ describe("Token tests", function () {
     const sellingWallet = signers[1].address;
     const mintAmount = BigInt(50000 * 1e8);
 
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
-      signers[0].address,
+      access.address,
     ]);
     await azx.deployed();
 
@@ -56,11 +64,15 @@ describe("Token tests", function () {
     const sellingWallet = signers[0].address;
     const mintAmount = BigInt(50000 * 1e8);
 
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
-      signers[0].address,
+      access.address,
     ]);
     await azx.deployed();
 
@@ -83,11 +95,15 @@ describe("Token tests", function () {
     const sellingWallet = signers[0].address;
     const mintAmount = BigInt(50000 * 1e8);
 
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
-      signers[0].address,
+      access.address,
     ]);
     await azx.deployed();
 
@@ -102,37 +118,11 @@ describe("Token tests", function () {
     ]);
 
     await azx.transfer(someContract.address, mintAmount);
-    await expect(someContract.someFunction(azx.address)).to.be.revertedWith("AUZToken: Contract doesn't have permission to transfer tokens");
+    await expect(someContract.someFunction(azx.address)).to.be.revertedWith(
+      "AUZToken: Contract doesn't have permission to transfer tokens"
+    );
     await azx.updateAllowedContracts(someContract.address, true);
     await someContract.someFunction(azx.address);
-  });
-
-  it("Should revert if delegateTransferFrom calls not a transfersDelegator and vice versa", async function () {
-    const signers = await ethers.getSigners();
-
-    const sellingWallet = signers[0].address;
-    const mintAmount = BigInt(60000 * 1e8);
-
-    const AZX = await ethers.getContractFactory("AUZToken");
-    const azx = await upgrades.deployProxy(AZX, [
-      sellingWallet,
-      signers[0].address,
-      signers[0].address,
-    ]);
-    await azx.deployed();
-
-    await azx.mintGold(mintAmount, [
-      "wdfqf78qef8f",
-      "qw7d98qfquf9q",
-      "8wq9fh89qef3r",
-    ]);
-
-    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8),signers[0].address, 0, false)).to.be.revertedWith("AUZToken: Only transfers manager can call this function");
-    await expect(azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8), signers[0].address, 0)).to.be.revertedWith("AUZToken: Only transfers manager can call this function");
-    await azx.updateManager(signers[0].address)
-    await azx.delegateApprove(signers[0].address, BigInt(40000 * 1e8), signers[0].address, 0);
-    await azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(40000 * 1e8), signers[0].address, 0, false)
-    await expect(azx.delegateTransferFrom(sellingWallet, signers[1].address, BigInt(10000 * 1e8),signers[0].address, 0, false)).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
   });
 
   it("Transfer comissions calculations", async function () {
@@ -141,11 +131,15 @@ describe("Token tests", function () {
     const sellingWallet = signers[0].address;
     const mintAmount = BigInt(50000 * 1e8);
 
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
-      signers[0].address,
+      access.address,
     ]);
     await azx.deployed();
 
@@ -166,7 +160,6 @@ describe("Token tests", function () {
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
       BigInt(990 * 1e8)
     );
-
   });
 
   it("Should take transfer fee if address is not whitelisted and and vice versa", async function () {
@@ -175,11 +168,15 @@ describe("Token tests", function () {
     const sellingWallet = signers[0].address;
     const mintAmount = BigInt(50000 * 1e8);
 
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
     const AZX = await ethers.getContractFactory("AUZToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
-      signers[0].address,
+      access.address,
     ]);
     await azx.deployed();
 
@@ -200,6 +197,157 @@ describe("Token tests", function () {
     expect(BigInt(await azx.balanceOf(signers[1].address))).to.equal(
       BigInt(1000 * 1e8)
     );
+  });
 
+  it("Delegate approve", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      access.address,
+    ]);
+    await azx.deployed();
+    await access.updateSignValidationWhitelist(azx.address, true);
+
+    await azx.mintGold(mintAmount, ["wdfqf78qef8f"]);
+    await azx.transfer(signers[1].address, mintAmount);
+
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const message = await azx.delegateApproveProof(
+      bytes32hex,
+      signers[1].address,
+      signers[0].address,
+      BigInt(1000 * 1e8),
+      BigInt(1 * 1e8)
+    );
+    const signature = await signers[1].signMessage(
+      ethers.utils.arrayify(message)
+    );
+
+    await expect(
+      azx.delegateApprove(
+        signature,
+        bytes32hex,
+        signers[1].address,
+        signers[0].address,
+        BigInt(100000 * 1e8),
+        BigInt(1000 * 1e8)
+      )
+    ).to.be.revertedWith("AUZToken: Signer is not owner");
+
+    await expect(
+      azx.delegateTransfer(
+        signature,
+        bytes32hex,
+        signers[1].address,
+        signers[0].address,
+        BigInt(100000 * 1e8),
+        BigInt(1000 * 1e8)
+      )
+    ).to.be.revertedWith("AUZToken: Signer is not owner");
+
+    await expect(
+      azx.connect(signers[1]).delegateApprove(
+        signature,
+        bytes32hex,
+        signers[1].address,
+        signers[0].address,
+        BigInt(1000 * 1e8),
+        BigInt(1 * 1e8)
+      )
+    ).to.be.revertedWith("AUZToken: Only managers is allowed");
+
+    await azx.delegateApprove(
+      signature,
+      bytes32hex,
+      signers[1].address,
+      signers[0].address,
+      BigInt(1000 * 1e8),
+      BigInt(1 * 1e8)
+    );
+
+    expect(
+      BigInt(await azx.allowance(signers[1].address, signers[0].address))
+    ).to.equal(BigInt(1000 * 1e8));
+  });
+
+  it("Delegate transfer", async function () {
+    const signers = await ethers.getSigners();
+
+    const sellingWallet = signers[0].address;
+    const mintAmount = BigInt(50000 * 1e8);
+
+    const Access = await ethers.getContractFactory("Access");
+    const access = await upgrades.deployProxy(Access, []);
+    await access.deployed();
+
+    const AZX = await ethers.getContractFactory("AUZToken");
+    const azx = await upgrades.deployProxy(AZX, [
+      sellingWallet,
+      signers[0].address,
+      access.address,
+    ]);
+    await azx.deployed();
+    await access.updateSignValidationWhitelist(azx.address, true);
+
+    await azx.mintGold(mintAmount, ["wdfqf78qef8f"]);
+    await azx.updateCommissionTransfer(0);
+    await azx.transfer(signers[1].address, mintAmount);
+
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const message = await azx.delegateTransferProof(
+      bytes32hex,
+      signers[1].address,
+      signers[0].address,
+      BigInt(1000 * 1e8),
+      0
+    );
+    const signature = await signers[1].signMessage(
+      ethers.utils.arrayify(message)
+    );
+
+    await expect(
+      azx.delegateTransfer(
+        signature,
+        bytes32hex,
+        signers[1].address,
+        signers[0].address,
+        BigInt(100000 * 1e8),
+        BigInt(1000 * 1e8)
+      )
+    ).to.be.revertedWith("AUZToken: Signer is not owner");
+
+    await expect(
+      azx.connect(signers[1]).delegateTransfer(
+        signature,
+        bytes32hex,
+        signers[1].address,
+        signers[0].address,
+        BigInt(1000 * 1e8),
+        0
+      )
+    ).to.be.revertedWith("AUZToken: Only managers is allowed");
+
+    await azx.delegateTransfer(
+      signature,
+      bytes32hex,
+      signers[1].address,
+      signers[0].address,
+      BigInt(1000 * 1e8),
+      0
+    );
+
+    expect(
+      BigInt(await azx.balanceOf(signers[0].address))
+    ).to.equal(BigInt(1000 * 1e8));
   });
 });

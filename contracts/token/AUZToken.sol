@@ -95,7 +95,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
     modifier onlyManager() {
         require(
             IAccess(accessControl).isSender(msg.sender),
-            "Manager: Only managers is allowed"
+            "AUZToken: Only managers is allowed"
         );
         _;
     }
@@ -305,9 +305,9 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
     }
 
     /**
-     * @notice Get message for the users delegate approve and transfer signature
+     * @notice Get message for the users delegate approve signature
      */
-    function delegateProof(
+    function delegateApproveProof(
         bytes32 token,
         address owner,
         address spender,
@@ -343,7 +343,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
         uint256 amount,
         uint256 networkFee
     ) external whenNotPaused onlyManager returns (bool) {
-        bytes32 message = delegateProof(
+        bytes32 message = delegateApproveProof(
             token,
             owner,
             spender,
@@ -351,10 +351,32 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
             networkFee
         );
         address signer = IAccess(accessControl).preAuthValidations(message, token, signature);
-        require(signer == owner, "Manager: Signer is not owner");
+        require(signer == owner, "AUZToken: Signer is not owner");
         _privateTransfer(owner, msg.sender, networkFee, false);
         _approve(owner, spender, amount);
         return true;
+    }
+
+    /**
+     * @notice Get message for the users delegate transfer signature
+     */
+    function delegateTransferProof(
+        bytes32 token,
+        address owner,
+        address spender,
+        uint256 amount,
+        uint256 networkFee
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(
+                getChainID(),
+                token,
+                amount,
+                owner,
+                spender,
+                networkFee
+            )
+        );
     }
 
     /**
@@ -374,7 +396,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
         uint256 amount,
         uint256 networkFee
     ) external whenNotPaused onlyManager returns (bool) {
-        bytes32 message = delegateProof(
+        bytes32 message = delegateTransferProof(
             token,
             owner,
             spender,
@@ -382,7 +404,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
             networkFee
         );
         address signer = IAccess(accessControl).preAuthValidations(message, token, signature);
-        require(signer == owner, "Manager: Signer is not owner");
+        require(signer == owner, "AUZToken: Signer is not owner");
         _privateTransfer(owner, msg.sender, networkFee, false);
         _privateTransfer(owner, spender, amount, true);
         emit DelegateTransfer(msg.sender, owner, spender, amount);
