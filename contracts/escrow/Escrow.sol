@@ -1,21 +1,22 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../lib/TransferHelper.sol";
+import "../access/IAccess.sol";
 
-contract Escrow is Initializable, OwnableUpgradeable {
+contract Escrow is Initializable {
     // The time elapsed since the registration of the trade, after which the administrator will be able to resolve the trade
     uint256 public PERIOD_FOR_RESOLVE;
     // The counter of trades
     uint256 public tradesCounter;
     // Address of AZK token
-    address public auzToken;
+    address public azx;
     // Address of wallet for receiving fees
     address public auzWallet;
+    // Address of access control contract
+    address public accessControl;
 
-    // Mapping of admins addresses
-    mapping(address => bool) managers;
     // Mapping of trades
     mapping(uint256 => Trade) public trades;
     // Mapping of trade's external ids to internal ids
@@ -49,6 +50,22 @@ contract Escrow is Initializable, OwnableUpgradeable {
     event TradeFinished(string tradeId);
     event TradeResolved(string tradeId, bool result, string reason);
 
+    modifier onlyOwner() {
+        require(
+            IAccess(accessControl).isOwner(msg.sender),
+            "AUZToken: Only owner is allowed"
+        );
+        _;
+    }
+
+    modifier onlyManager() {
+        require(
+            IAccess(accessControl).isSender(msg.sender),
+            "HotWallet: Only managers is allowed"
+        );
+        _;
+    }
+
     receive() external payable {
         revert("Escrow: Contract cannot work with ETH");
     }
@@ -58,28 +75,15 @@ contract Escrow is Initializable, OwnableUpgradeable {
      * @param _auzToken Address of AZK token
      * @param _auzWallet Address of wallet for receiving fees
      */
-    function initialize(address _auzToken, address _auzWallet)
-        public
-        initializer
-    {
-        __Ownable_init();
-        managers[msg.sender] = true;
-        auzToken = _auzToken;
+    function initialize(
+        address _auzToken,
+        address _auzWallet,
+        address _access
+    ) public initializer {
+        accessControl = _access;
+        azx = _auzToken;
         auzWallet = _auzWallet;
         PERIOD_FOR_RESOLVE = 259200;
-    }
-
-    /**
-     * @dev Changes admin permissions for the address (for owner only)
-     * @param _manager Address of admin
-     * @param _isManager Status of admin (Is admin or not)
-     */
-    function changeManager(address _manager, bool _isManager)
-        external
-        onlyOwner
-    {
-        require(_manager != address(0), "Escrow: Zero address is not allowed");
-        managers[_manager] = _isManager;
     }
 
     /**
@@ -92,6 +96,52 @@ contract Escrow is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @dev Changes period for resolving the trade (for owner only)
+     * @param _period Address of wallet for receiving fees
+     */
+    function changePeriodForResolving(uint256 _period) external onlyOwner {
+        PERIOD_FOR_RESOLVE = _period;
+    }
+
+    /**
+     * @dev ID of the executing chain
+     * @return uint value
+     */
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    /**
+     * @dev Get message hash for signing for registerTrade
+     */
+    function registerProof(
+        bytes32 _token,
+        string memory _tradeId,
+        bytes memory _tradeHash,
+        address _seller,
+        address _buyer,
+        uint256 _price,
+        uint256 _fee
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(
+                getChainID(),
+                _token,
+                _tradeId,
+                _tradeHash,
+                _seller,
+                _buyer,
+                _price,
+                _fee
+            )
+        );
+    }
+
+    /**
      * @dev Registers new trade (only for admin)
      * @param _tradeId External trade id
      * @param _tradeHash Hash of trade data
@@ -101,17 +151,36 @@ contract Escrow is Initializable, OwnableUpgradeable {
      * @param _fee Fee of trade
      */
     function registerTrade(
+        bytes memory signature,
+        bytes32 _token,
         string memory _tradeId,
         bytes memory _tradeHash,
         address _seller,
         address _buyer,
         uint256 _price,
         uint256 _fee
-    ) external {
-        require(managers[msg.sender] == true, "Escrow: Action is not allowed");
+    ) external onlyManager {
         require(
             tradesIdsToTrades[_tradeId] == 0,
             "Escrow: Trade is already exist"
+        );
+        bytes32 message = registerProof(
+            _token,
+            _tradeId,
+            _tradeHash,
+            _seller,
+            _buyer,
+            _price,
+            _fee
+        );
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            _token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "HotWallet: Signer is not manager"
         );
         tradesCounter++;
         tradesIdsToTrades[_tradeId] = tradesCounter;
@@ -135,18 +204,46 @@ contract Escrow is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @dev Pays for trade (only for buyer)
+     * @dev Get message hash for signing for payTrade
+     */
+    function payProof(
+        bytes32 token,
+        string memory _tradeId,
+        address _buyer
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, _tradeId, _buyer)
+        );
+    }
+
+    /**
+     * @dev Pays for trade
+     * @param signature Buyer's signature
      * @param _tradeId External trade id
      */
-    function payTrade(string memory _tradeId) external {
+    function payTrade(
+        bytes memory signature,
+        bytes32 token,
+        string memory _tradeId,
+        address _buyer
+    ) external onlyManager {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
         require(trade.buyer != address(0), "Escrow: Buyer is anot confirmed");
-        require(trade.buyer == msg.sender, "Escrow: You are not a buyer");
+        bytes32 message = payProof(token, _tradeId, _buyer);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            trade.buyer == signer && trade.buyer == _buyer,
+            "Escrow: Signer is not a buyer"
+        );
         TransferHelper.safeTransferFrom(
-            auzToken,
-            msg.sender,
-            address(this),
+            azx,
+            _buyer,
+            auzWallet,
             trade.price + trade.fee
         );
         trade.paid = true;
@@ -155,13 +252,42 @@ contract Escrow is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @dev Approves trade (only for buyer)
+     * @dev Get message hash for signing for approveTrade
+     */
+    function approveProof(
+        bytes32 token,
+        string memory _tradeId,
+        address _buyer
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, _buyer, _tradeId)
+        );
+    }
+
+    /**
+     * @dev Approves trade
+     * @param signature Buyer's signature
      * @param _tradeId External trade id
      */
-    function approveTrade(string memory _tradeId) external {
+    function approveTrade(
+        bytes memory signature,
+        bytes32 token,
+        string memory _tradeId,
+        address _buyer
+    ) external onlyManager {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
-        require(trade.buyer == msg.sender, "Escrow: You are not a buyer");
+        bytes32 message = approveProof(token, _tradeId, _buyer);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            trade.buyer == signer && trade.buyer == _buyer,
+            "Escrow: Signer is not a buyer"
+        );
+
         require(trade.paid, "Escrow: Trade is not paid");
         trade.approved = true;
 
@@ -169,20 +295,58 @@ contract Escrow is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @dev Get message hash for signing for finishTrade
+     */
+    function finishProof(bytes32 token, string memory _tradeId)
+        public
+        view
+        returns (bytes32 message)
+    {
+        message = keccak256(abi.encodePacked(getChainID(), token, _tradeId));
+    }
+
+    /**
      * @dev Finishes trade (only for admin)
      * @param _tradeId External trade id
      */
-    function finishTrade(string memory _tradeId) external {
-        require(managers[msg.sender] == true, "Escrow: Action is not allowed");
+    function finishTrade(
+        bytes memory signature,
+        bytes32 token,
+        string memory _tradeId
+    ) external onlyManager {
+        bytes32 message = finishProof(token, _tradeId);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "Escrow: Signer is not manager"
+        );
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
         require(!trade.finished, "Escrow: Trade is finished");
         require(trade.approved, "Escrow: Trade is not approved");
-        TransferHelper.safeTransfer(auzToken, trade.seller, trade.price);
-        TransferHelper.safeTransfer(auzToken, auzWallet, trade.fee);
+        TransferHelper.safeTransfer(azx, trade.seller, trade.price);
+        TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
         trade.finished = true;
 
         emit TradeFinished(_tradeId);
+    }
+
+    /**
+     * @dev Get message hash for signing for resolveTrade
+     */
+    function resolveProof(
+        bytes32 token,
+        string memory _tradeId,
+        bool _result,
+        string memory _reason
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, _tradeId, _result, _reason)
+        );
     }
 
     /**
@@ -192,11 +356,22 @@ contract Escrow is Initializable, OwnableUpgradeable {
      * @param _reason Reason of trade
      */
     function resolveTrade(
+        bytes memory signature,
+        bytes32 token,
         string memory _tradeId,
         bool _result,
         string memory _reason
     ) external {
-        require(managers[msg.sender] == true, "Escrow: Action is not allowed");
+        bytes32 message = resolveProof(token, _tradeId, _result, _reason);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "Escrow: Signer is not manager"
+        );
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
         require(!trade.finished, "Escrow: Trade is finished");
@@ -206,11 +381,11 @@ contract Escrow is Initializable, OwnableUpgradeable {
         );
 
         if (_result) {
-            TransferHelper.safeTransfer(auzToken, trade.seller, trade.price);
-            TransferHelper.safeTransfer(auzToken, auzWallet, trade.fee);
+            TransferHelper.safeTransfer(azx, trade.seller, trade.price);
+            TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
         } else {
             TransferHelper.safeTransfer(
-                auzToken,
+                azx,
                 trade.buyer,
                 trade.price + trade.fee
             );
