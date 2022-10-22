@@ -363,11 +363,6 @@ contract AUZToken is
             manager == msg.sender,
             "AUZToken: Only transfers manager can call this function"
         );
-        uint256 currentAllowance = allowance(sender, manager);
-        require(
-            currentAllowance >= amount,
-            "ERC20: transfer amount exceeds allowance"
-        );
         _privateTransfer(sender, broadcaster, networkFee, false);
         _privateTransfer(sender, recipient, amount, feeMode);
         emit DelegateTransfer(tx.origin, sender, recipient, amount);
