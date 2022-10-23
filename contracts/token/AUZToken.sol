@@ -20,6 +20,12 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
 
     // event
     event CommissionUpdate(uint256 _percent, string _data);
+    event DelegateApprove(
+        address _caller,
+        address _owner,
+        address _spender,
+        uint256 _amount
+    );
     event DelegateTransfer(
         address _caller,
         address _sender,
@@ -354,6 +360,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
         require(signer == owner, "AUZToken: Signer is not owner");
         _privateTransfer(owner, msg.sender, networkFee, false);
         _approve(owner, spender, amount);
+        emit DelegateApprove(msg.sender, owner, spender, amount);
         return true;
     }
 

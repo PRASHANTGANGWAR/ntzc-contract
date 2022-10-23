@@ -66,19 +66,50 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "saleId",
+        "type": "bytes32"
       },
       {
         "indexed": true,
         "internalType": "address",
-        "name": "newOwner",
+        "name": "seller",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "name": "OwnershipTransferred",
+    "name": "SaleRequestCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "admin",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "saleId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isApproved",
+        "type": "bool"
+      }
+    ],
+    "name": "SaleRequestProcessed",
     "type": "event"
   },
   {
@@ -121,57 +152,7 @@
         "type": "uint256"
       }
     ],
-    "name": "PreAuthorizedAction",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes16",
-        "name": "saleId",
-        "type": "bytes16"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "seller",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "SaleRequestCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes16",
-        "name": "saleId",
-        "type": "bytes16"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "admin",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isApproved",
-        "type": "bool"
-      }
-    ],
-    "name": "SaleRequestProcessed",
+    "name": "TokenSold",
     "type": "event"
   },
   {
@@ -182,6 +163,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "accessControl",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -221,11 +215,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "message",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes",
         "name": "signature",
         "type": "bytes"
@@ -252,6 +241,35 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "getBuyProof",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "message",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getChainID",
     "outputs": [
@@ -267,36 +285,26 @@
   {
     "inputs": [
       {
-        "internalType": "bytes4",
-        "name": "methodHash",
-        "type": "bytes4"
-      },
-      {
         "internalType": "bytes32",
         "name": "token",
         "type": "bytes32"
       },
       {
-        "internalType": "uint256",
-        "name": "networkFee",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "saleId",
+        "type": "bytes32"
       },
       {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
+        "internalType": "bool",
+        "name": "isApproved",
+        "type": "bool"
       }
     ],
-    "name": "getProof",
+    "name": "getSaleProcessProof",
     "outputs": [
       {
         "internalType": "bytes32",
-        "name": "",
+        "name": "message",
         "type": "bytes32"
       }
     ],
@@ -307,28 +315,49 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "message",
+        "name": "token",
         "type": "bytes32"
       },
       {
-        "internalType": "bytes",
-        "name": "signature",
-        "type": "bytes"
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "networkFee",
+        "type": "uint256"
       }
     ],
-    "name": "getSigner",
+    "name": "getSaleProof",
     "outputs": [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "message",
+        "type": "bytes32"
       }
     ],
-    "stateMutability": "pure",
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_azx",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_access",
+        "type": "address"
+      }
+    ],
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -337,95 +366,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "managers",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "methodWord_approve",
-    "outputs": [
-      {
-        "internalType": "bytes4",
-        "name": "",
-        "type": "bytes4"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "methodWord_buy",
-    "outputs": [
-      {
-        "internalType": "bytes4",
-        "name": "",
-        "type": "bytes4"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "methodWord_sell",
-    "outputs": [
-      {
-        "internalType": "bytes4",
-        "name": "",
-        "type": "bytes4"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "methodWord_transfer",
-    "outputs": [
-      {
-        "internalType": "bytes4",
-        "name": "",
-        "type": "bytes4"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "message",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes",
         "name": "signature",
         "type": "bytes"
@@ -436,48 +376,9 @@
         "type": "bytes32"
       },
       {
-        "internalType": "uint256",
-        "name": "networkFee",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "preAuthorizedApproval",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "message",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "signature",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "token",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "networkFee",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
       },
       {
         "internalType": "uint256",
@@ -485,9 +386,14 @@
         "type": "uint256"
       },
       {
-        "internalType": "bytes16",
+        "internalType": "bytes32",
         "name": "saleId",
-        "type": "bytes16"
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "networkFee",
+        "type": "uint256"
       }
     ],
     "name": "preAuthorizedSell",
@@ -504,11 +410,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "message",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes",
         "name": "signature",
         "type": "bytes"
@@ -519,38 +420,9 @@
         "type": "bytes32"
       },
       {
-        "internalType": "uint256",
-        "name": "networkFee",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "preAuthorizedTransfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes16",
+        "internalType": "bytes32",
         "name": "saleId",
-        "type": "bytes16"
+        "type": "bytes32"
       },
       {
         "internalType": "bool",
@@ -564,18 +436,11 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
-        "internalType": "bytes16",
+        "internalType": "bytes32",
         "name": "",
-        "type": "bytes16"
+        "type": "bytes32"
       }
     ],
     "name": "saleRequests",
@@ -612,80 +477,12 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "tokenUsed",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_azx",
-        "type": "address"
-      }
-    ],
-    "name": "updateAZX",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "_limit",
         "type": "uint256"
       }
     ],
     "name": "updateBuyLimit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_manager",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "_isManager",
-        "type": "bool"
-      }
-    ],
-    "name": "updateManagers",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
