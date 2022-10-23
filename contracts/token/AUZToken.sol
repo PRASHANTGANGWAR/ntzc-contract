@@ -430,7 +430,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
             "ERC20: transfer to the zero address"
         );
         uint256 fee = calculateCommissionTransfer(_amount);
-        if (fee > 0 && !freeOfFeeContracts[_from] && _feeMode) {
+        if (fee > 0 && !freeOfFeeContracts[msg.sender] && _feeMode) {
             _transfer(_from, feeWallet, fee);
             _amount = _amount - fee;
         }
