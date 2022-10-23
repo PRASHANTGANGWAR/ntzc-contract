@@ -173,7 +173,6 @@ describe("Escrow tests", function () {
       access.address,
     ]);
     await escrow.deployed();
-    await escrow.changePeriodForResolving(0);
     await token.updateAllowedContracts(escrow.address, true);
     await token.updateFreeOfFeeContracts(escrow.address, true);
     await access.updateSignValidationWhitelist(token.address, true);
@@ -245,6 +244,9 @@ describe("Escrow tests", function () {
     //////////////
     // There is something happened and buyer has got the goods but don't wont/cannot make approve
     //////////////
+
+    await network.provider.send("evm_increaseTime", [259200]); // Waiting for resolving perios
+    await network.provider.send("evm_mine");
 
     // RESOLVE TRADE
     {
