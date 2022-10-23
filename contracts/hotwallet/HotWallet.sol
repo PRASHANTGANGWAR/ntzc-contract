@@ -59,8 +59,8 @@ contract HotWallet is Initializable {
         _;
     }
 
-    function initialize(address _azx, address _accsess) external initializer {
-        accessControl = _accsess;
+    function initialize(address _azx, address _access) external initializer {
+        accessControl = _access;
         azx = _azx;
         BUY_LIMIT = 5000 * 10**8;
     }
@@ -164,10 +164,11 @@ contract HotWallet is Initializable {
     function getSaleProof(
         bytes32 token,
         address seller,
-        uint256 amount
+        uint256 amount,
+        uint256 networkFee
     ) public view returns (bytes32 message) {
         message = keccak256(
-            abi.encodePacked(getChainID(), token, seller, amount)
+            abi.encodePacked(getChainID(), token, seller, amount, networkFee)
         );
     }
 
@@ -186,7 +187,7 @@ contract HotWallet is Initializable {
         bytes32 saleId,
         uint256 networkFee
     ) public onlyManager returns (bool) {
-        bytes32 message = getSaleProof(token, seller, amount);
+        bytes32 message = getSaleProof(token, seller, amount, networkFee);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
             token,

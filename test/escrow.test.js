@@ -245,7 +245,7 @@ describe("Escrow tests", function () {
     // There is something happened and buyer has got the goods but don't wont/cannot make approve
     //////////////
 
-    await network.provider.send("evm_increaseTime", [259200]); // Waiting for resolving perios
+    await network.provider.send("evm_increaseTime", [259200]); // Waiting for resolving period
     await network.provider.send("evm_mine");
 
     // RESOLVE TRADE

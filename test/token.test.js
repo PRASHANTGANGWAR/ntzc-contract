@@ -253,17 +253,19 @@ describe("Token tests", function () {
         BigInt(100000 * 1e8),
         BigInt(1000 * 1e8)
       )
-    ).to.be.revertedWith("AUZToken: Signer is not owner");
+    ).to.be.revertedWith("AUZToken: Signer is not owner"); // it means that proof is invalid (ECDSA recover wrong address from wrong signature)
 
     await expect(
-      azx.connect(signers[1]).delegateApprove(
-        signature,
-        bytes32hex,
-        signers[1].address,
-        signers[0].address,
-        BigInt(1000 * 1e8),
-        BigInt(1 * 1e8)
-      )
+      azx
+        .connect(signers[1])
+        .delegateApprove(
+          signature,
+          bytes32hex,
+          signers[1].address,
+          signers[0].address,
+          BigInt(1000 * 1e8),
+          BigInt(1 * 1e8)
+        )
     ).to.be.revertedWith("AUZToken: Only managers is allowed");
 
     await azx.delegateApprove(
@@ -327,14 +329,16 @@ describe("Token tests", function () {
     ).to.be.revertedWith("AUZToken: Signer is not owner");
 
     await expect(
-      azx.connect(signers[1]).delegateTransfer(
-        signature,
-        bytes32hex,
-        signers[1].address,
-        signers[0].address,
-        BigInt(1000 * 1e8),
-        0
-      )
+      azx
+        .connect(signers[1])
+        .delegateTransfer(
+          signature,
+          bytes32hex,
+          signers[1].address,
+          signers[0].address,
+          BigInt(1000 * 1e8),
+          0
+        )
     ).to.be.revertedWith("AUZToken: Only managers is allowed");
 
     await azx.delegateTransfer(
@@ -346,8 +350,8 @@ describe("Token tests", function () {
       0
     );
 
-    expect(
-      BigInt(await azx.balanceOf(signers[0].address))
-    ).to.equal(BigInt(1000 * 1e8));
+    expect(BigInt(await azx.balanceOf(signers[0].address))).to.equal(
+      BigInt(1000 * 1e8)
+    );
   });
 });
