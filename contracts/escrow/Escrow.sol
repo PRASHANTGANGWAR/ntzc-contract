@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../lib/TransferHelper.sol";
 import "../access/IAccess.sol";
 
@@ -38,6 +37,7 @@ contract Escrow is Initializable {
 
     // Events
     event TradeRegistered(
+        address signer,
         string indexed tradeId,
         bytes tradeHash,
         address seller,
@@ -47,8 +47,8 @@ contract Escrow is Initializable {
     );
     event TradePaid(string tradeId, uint256 amount);
     event TradeApproved(string tradeId);
-    event TradeFinished(string tradeId);
-    event TradeResolved(string tradeId, bool result, string reason);
+    event TradeFinished(address signer, string tradeId);
+    event TradeResolved(address signer, string tradeId, bool result, string reason);
 
     modifier onlyOwner() {
         require(
@@ -194,6 +194,7 @@ contract Escrow is Initializable {
         trade.timestamp = block.timestamp;
 
         emit TradeRegistered(
+            signer,
             _tradeId,
             _tradeHash,
             _seller,
@@ -229,7 +230,8 @@ contract Escrow is Initializable {
     ) external onlyManager {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
-        require(trade.buyer != address(0), "Escrow: Buyer is anot confirmed");
+        require(!trade.finished, "Escrow: Trade is finished");
+        require(trade.buyer != address(0), "Escrow: Buyer is not confirmed");
         bytes32 message = payProof(token, _tradeId, _buyer);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
@@ -243,7 +245,7 @@ contract Escrow is Initializable {
         TransferHelper.safeTransferFrom(
             azx,
             _buyer,
-            auzWallet,
+            address(this),
             trade.price + trade.fee
         );
         trade.paid = true;
@@ -277,6 +279,7 @@ contract Escrow is Initializable {
     ) external onlyManager {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
+        require(!trade.finished, "Escrow: Trade is finished");
         bytes32 message = approveProof(token, _tradeId, _buyer);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
@@ -332,7 +335,7 @@ contract Escrow is Initializable {
         TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
         trade.finished = true;
 
-        emit TradeFinished(_tradeId);
+        emit TradeFinished(signer, _tradeId);
     }
 
     /**
@@ -362,6 +365,14 @@ contract Escrow is Initializable {
         bool _result,
         string memory _reason
     ) external {
+        require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
+        Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
+        require(!trade.finished, "Escrow: Trade is finished");
+        require(
+            block.timestamp >= trade.timestamp + PERIOD_FOR_RESOLVE,
+            "Escrow: To early to resolve"
+        );
+
         bytes32 message = resolveProof(token, _tradeId, _result, _reason);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
@@ -372,27 +383,23 @@ contract Escrow is Initializable {
             IAccess(accessControl).isSigner(signer),
             "Escrow: Signer is not manager"
         );
-        require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
-        Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
-        require(!trade.finished, "Escrow: Trade is finished");
-        require(
-            block.timestamp >= trade.timestamp + PERIOD_FOR_RESOLVE,
-            "Escrow: To early to resolve"
-        );
 
-        if (_result) {
-            TransferHelper.safeTransfer(azx, trade.seller, trade.price);
-            TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
-        } else {
-            TransferHelper.safeTransfer(
-                azx,
-                trade.buyer,
-                trade.price + trade.fee
-            );
+        if (trade.paid) {
+            if (_result) {
+                TransferHelper.safeTransfer(azx, trade.seller, trade.price);
+                TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
+            } else {
+                TransferHelper.safeTransfer(
+                    azx,
+                    trade.buyer,
+                    trade.price + trade.fee
+                );
+            }
         }
+
         trade.finished = true;
 
-        emit TradeResolved(_tradeId, _result, _reason);
+        emit TradeResolved(signer, _tradeId, _result, _reason);
     }
 
     /**
