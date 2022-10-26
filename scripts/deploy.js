@@ -9,7 +9,7 @@ async function main() {
   const backend = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
   const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
 
-  // Access deployed to: 0x2A51414644C14A42f83707E5D31101ce826C5A60 => 0x0df803cC2396ef0f33D7132653AD848fDE883dFF
+  // Access deployed to: 0x2A51414644C14A42f83707E5D31101ce826C5A60 => 0x9a16BE0d10D4ebB6F9065A84002Eb6205C6A6508
   const Access = await ethers.getContractFactory("Access");
   const access = await upgrades.deployProxy(Access, []);
   await access.deployed();
