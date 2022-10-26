@@ -51,7 +51,7 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
         onlyOwner
     {
         require(_manager != address(0), "Access: Zero address is not allowed");
-        minters[_manager] = _isManager;
+        sendManagers[_manager] = _isManager;
     }
 
     /**
@@ -65,7 +65,7 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
         onlyOwner
     {
         require(_manager != address(0), "Access: Zero address is not allowed");
-        minters[_manager] = _isManager;
+        signManagers[_manager] = _isManager;
     }
 
     /**
