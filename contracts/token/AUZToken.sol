@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "../lossless/LERC20.sol";
 import "../access/IAccess.sol";
 
 /**
@@ -14,7 +15,7 @@ import "../access/IAccess.sol";
  * @notice Contract for the AUZToken
  * @dev All function calls are currently implemented without side effects
  */
-contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
+contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     // attach library functions
     using AddressUpgradeable for address;
 
@@ -68,7 +69,7 @@ contract AUZToken is Initializable, ERC20Upgradeable, PausableUpgradeable {
         address _feeWallet,
         address _accessControl
     ) external initializer {
-        __ERC20_init("AUZToken", "AUZ");
+        __LERC20_init("AUZToken", "AUZ", msg.sender, msg.sender, 86400, address(0xe91D7cEBcE484070fc70777cB04F7e2EfAe31DB4));
         __Pausable_init();
         feeWallet = _feeWallet;
         sellingWallet = _sellingWallet;

@@ -55,4 +55,16 @@ describe("Token tests", function () {
 
 
   });
+
+  // it("Test of all parts of system", async function () {
+  //   const back = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
+    
+  //   const Access = "0x2A51414644C14A42f83707E5D31101ce826C5A60";
+  //   const access = await ethers.getContractAt("Access", Access);
+
+  //   console.log(await access.owner());
+  //   console.log(await access.isSigner(back));
+  //   console.log(await access.isSender(back));
+
+  // });
 });
