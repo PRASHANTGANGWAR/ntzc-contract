@@ -25,6 +25,7 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
         minters[msg.sender] = true;
         sendManagers[msg.sender] = true;
         signManagers[msg.sender] = true;
+        tradeDeskManagers[msg.sender] = true;
     }
 
     /**
@@ -78,7 +79,7 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     function updateTradeDeskUsers(address _user, bool _isTradeDesk)
         external
     {
-        require(msg.sender == owner() || signManagers[msg.sender], "Access: Only owner or sign manager can call");
+        require(msg.sender == owner() || signValidationWhitelist[msg.sender], "Access: Only owner or sign manager can call");
         require(_user != address(0), "Access: Zero address is not allowed");
         tradeDeskManagers[_user] = _isTradeDesk;
     }
