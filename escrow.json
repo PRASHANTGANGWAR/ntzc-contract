@@ -22,25 +22,6 @@
         "type": "string"
       }
     ],
-    "name": "TradeApproved",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "signer",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "tradeId",
-        "type": "string"
-      }
-    ],
     "name": "TradeFinished",
     "type": "event"
   },
@@ -80,12 +61,6 @@
       },
       {
         "indexed": false,
-        "internalType": "bytes",
-        "name": "tradeHash",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
         "internalType": "address",
         "name": "seller",
         "type": "address"
@@ -107,9 +82,46 @@
         "internalType": "uint256",
         "name": "fee",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timeToResolve",
+        "type": "uint256"
       }
     ],
     "name": "TradeRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "tradeId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "cap",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "TradeReleased",
     "type": "event"
   },
   {
@@ -144,17 +156,17 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "PERIOD_FOR_RESOLVE",
-    "outputs": [
+    "anonymous": false,
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "indexed": false,
+        "internalType": "string",
+        "name": "tradeId",
+        "type": "string"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "TradeValidated",
+    "type": "event"
   },
   {
     "inputs": [],
@@ -167,63 +179,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "token",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "_tradeId",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_buyer",
-        "type": "address"
-      }
-    ],
-    "name": "approveProof",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "message",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "signature",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "token",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "_tradeId",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_buyer",
-        "type": "address"
-      }
-    ],
-    "name": "approveTrade",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -250,19 +205,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_period",
-        "type": "uint256"
-      }
-    ],
-    "name": "changePeriodForResolving",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -349,11 +291,6 @@
     "name": "getTrade",
     "outputs": [
       {
-        "internalType": "bytes",
-        "name": "tradeHash",
-        "type": "bytes"
-      },
-      {
         "internalType": "address",
         "name": "seller",
         "type": "address"
@@ -374,9 +311,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
+        "internalType": "bool",
+        "name": "valid",
+        "type": "bool"
       },
       {
         "internalType": "bool",
@@ -385,12 +322,12 @@
       },
       {
         "internalType": "bool",
-        "name": "approved",
+        "name": "finished",
         "type": "bool"
       },
       {
         "internalType": "bool",
-        "name": "finished",
+        "name": "released",
         "type": "bool"
       }
     ],
@@ -490,11 +427,6 @@
         "type": "string"
       },
       {
-        "internalType": "bytes",
-        "name": "_tradeHash",
-        "type": "bytes"
-      },
-      {
         "internalType": "address",
         "name": "_seller",
         "type": "address"
@@ -512,6 +444,11 @@
       {
         "internalType": "uint256",
         "name": "_fee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_timeToResolve",
         "type": "uint256"
       }
     ],
@@ -544,11 +481,6 @@
         "type": "string"
       },
       {
-        "internalType": "bytes",
-        "name": "_tradeHash",
-        "type": "bytes"
-      },
-      {
         "internalType": "address",
         "name": "_seller",
         "type": "address"
@@ -567,9 +499,71 @@
         "internalType": "uint256",
         "name": "_fee",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_timeToResolve",
+        "type": "uint256"
       }
     ],
     "name": "registerTrade",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_tradeId",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_buyer",
+        "type": "address"
+      }
+    ],
+    "name": "releaseProof",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "message",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_tradeId",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_buyer",
+        "type": "address"
+      }
+    ],
+    "name": "releaseTrade",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -644,6 +638,63 @@
   {
     "inputs": [
       {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isTradeDesk",
+        "type": "bool"
+      }
+    ],
+    "name": "setTradeDesk",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isTradeDesk",
+        "type": "bool"
+      }
+    ],
+    "name": "tradeDeskProof",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "message",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
@@ -655,11 +706,6 @@
         "internalType": "string",
         "name": "tradeId",
         "type": "string"
-      },
-      {
-        "internalType": "bytes",
-        "name": "tradeHash",
-        "type": "bytes"
       },
       {
         "internalType": "address",
@@ -683,8 +729,18 @@
       },
       {
         "internalType": "uint256",
-        "name": "timestamp",
+        "name": "timeToResolve",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "resolveTS",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "valid",
+        "type": "bool"
       },
       {
         "internalType": "bool",
@@ -693,12 +749,12 @@
       },
       {
         "internalType": "bool",
-        "name": "approved",
+        "name": "finished",
         "type": "bool"
       },
       {
         "internalType": "bool",
-        "name": "finished",
+        "name": "released",
         "type": "bool"
       }
     ],
@@ -735,6 +791,53 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_tradeId",
+        "type": "string"
+      }
+    ],
+    "name": "validateProof",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "message",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "token",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_tradeId",
+        "type": "string"
+      }
+    ],
+    "name": "validateTrade",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

@@ -8,8 +8,9 @@ async function main() {
 
   const backend = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
   const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
+  const signer2 = "0x3ddD16e693E7c7251d64d9ad36506cBDf2268D55";
 
-  // Access deployed to: 0x2A51414644C14A42f83707E5D31101ce826C5A60 => 0x9a16BE0d10D4ebB6F9065A84002Eb6205C6A6508
+  // Access deployed to: 0xf74Fa7226237c54Acb18211fb3b2FC62AAFF8fa9 => 0x5D27E3f348948522B72B2d4056Ad1C0E86133b96
   const Access = await ethers.getContractFactory("Access");
   const access = await upgrades.deployProxy(Access, []);
   await access.deployed();
@@ -24,11 +25,11 @@ async function main() {
     contract: "contracts/access/Access.sol:Access",
   });
 
-  // AZX deployed to: 0xC9815C6198ecdFdc477c8Ce3197f0c457cE54676 => 0x4f06410eE5E99C4231ba67dAe0e8030d0Fa30796
+  // AZX deployed to: 0x1994Fd475c4769138A6f834141DAEc362516497F => 0x9212f6B68709ca3Af0A96FC2901F0b8BEC8f6816
   const AZX = await ethers.getContractFactory("AUZToken");
   const azx = await upgrades.deployProxy(AZX, [
     admin.address,
-    admin.address,
+    "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
     access.address,
   ]);
   await azx.deployed();
@@ -40,7 +41,7 @@ async function main() {
     contract: "contracts/token/AUZToken.sol:AUZToken",
   });
 
-  // HotWallet deployed to: 0xFcD3F4f600fa881f3b5c20e686e2E55b26A5e1ae => 0x2b9C6e8c61ff8dc45bEcd69dB815C18F794cBE49
+  // HotWallet deployed to: 0x5CdE1b89f757eDdA8f149d6d63C7dE764C83d498 => 0x1bA41623160Ef93a69877641Db713e79Fb49206a
   const HW = await ethers.getContractFactory("HotWallet");
   const hw = await upgrades.deployProxy(HW, [azx.address, access.address]);
   await hw.deployed();
@@ -52,11 +53,11 @@ async function main() {
     contract: "contracts/hotwallet/HotWallet.sol:HotWallet",
   });
 
-  // Escrow deployed to: 0x210D23F4Dc0B085C8Ac890c4E6e99b712439ffD0 => 0x199BFC98f8c1be7bf31ddF737b0a41Df2a3a4654
+  // Escrow deployed to: 0xae1B5Ee408c92334195331167C1BDf3Fcc26a42e => 0x24d53A079d35caceCCB550F001D545171bCdb049
   const Escrow = await ethers.getContractFactory("Escrow");
   const escrow = await upgrades.deployProxy(Escrow, [
     azx.address,
-    admin.address,
+    "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
     access.address,
   ]);
   await escrow.deployed();
@@ -85,9 +86,29 @@ async function main() {
   await access.updateSigners(backend, true);
   await access.updateSenders(signer, true);
   await access.updateSigners(signer, true);
+  await access.updateTradeDeskUsers(signer, true);
+  await access.updateMinters(signer, true);
+  await access.updateSigners(signer2, true);
+  await access.updateTradeDeskUsers(signer2, true);
+  await access.updateMinters(signer2, true);
 
   const mintAmount = BigInt(200000 * 1e8);
-  await azx.mintGold(mintAmount, ["wdfqf78qef8f"]);
+  {
+    const bytes32hex = ethers.utils.randomBytes(32);
+    const message = await azx.mintProof(bytes32hex, mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+    const signature = await admin.signMessage(
+      ethers.utils.arrayify(message)
+    );
+    await azx.mint(signature, bytes32hex, mintAmount, [
+      "wdfqf78qef8f",
+      "qw7d98qfquf9q",
+      "8wq9fh89qef3r",
+    ]);
+  }
   await waitBlocks(5);
   await azx.transfer(hw.address, BigInt(100000 * 1e8));
   await azx.transfer(
