@@ -77,7 +77,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             msg.sender,
             msg.sender,
             86400,
-            address(0xe91D7cEBcE484070fc70777cB04F7e2EfAe31DB4)
+            address(0xC46236F780f1294B2C2a8c3cE5B4d62258dC2619)
         );
         __Pausable_init();
         feeWallet = _feeWallet;

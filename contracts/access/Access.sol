@@ -77,7 +77,7 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param _isTradeDesk Bool variable that indicates is wallet is TradeDesk or not
      */
     function updateTradeDeskUsers(address _user, bool _isTradeDesk)
-        external
+        external override
     {
         require(msg.sender == owner() || signValidationWhitelist[msg.sender], "Access: Only owner or sign manager can call");
         require(_user != address(0), "Access: Zero address is not allowed");

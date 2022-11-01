@@ -125,6 +125,42 @@ contract Escrow is Initializable {
     }
 
     /**
+     * @dev Get message hash for signing for validateTrade
+     */
+    function tradeDeskProof(
+        bytes32 token,
+        address user,
+        bool isTradeDesk
+    ) public view returns (bytes32 message) {
+        message = keccak256(abi.encodePacked(getChainID(), user, isTradeDesk));
+    }
+
+    /**
+     * @dev Validate trade
+     * @param signature Buyer's signature
+     * @param user User address
+     * @param isTradeDesk Is user TradeDesk
+     */
+    function setTradeDesk(
+        bytes memory signature,
+        bytes32 token,
+        address user,
+        bool isTradeDesk
+    ) external onlyManager {
+        bytes32 message = tradeDeskProof(token, user, isTradeDesk);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "HotWallet: Signer is not manager"
+        );
+        IAccess(accessControl).updateTradeDeskUsers(user, isTradeDesk);
+    }
+
+    /**
      * @dev Get message hash for signing for registerTrade
      */
     function registerProof(
@@ -434,7 +470,11 @@ contract Escrow is Initializable {
 
         if (trade.paid) {
             if (_result) {
-                TransferHelper.safeTransfer(azx, trade.seller, trade.price - trade.fee);
+                TransferHelper.safeTransfer(
+                    azx,
+                    trade.seller,
+                    trade.price - trade.fee
+                );
                 TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
             } else {
                 TransferHelper.safeTransfer(

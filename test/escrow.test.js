@@ -48,7 +48,18 @@ describe("Escrow tests", function () {
     await token.updateAllowedContracts(escrow.address, true);
     await token.updateFreeOfFeeContracts(escrow.address, true);
     await access.updateSignValidationWhitelist(escrow.address, true);
-    await access.updateTradeDeskUsers(tradeDesk.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await escrow.tradeDeskProof(
+        bytes32hex,
+        tradeDesk.address,
+        true
+      );
+      const signature = await manager.signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await escrow.setTradeDesk(signature, bytes32hex, tradeDesk.address, true);
+    }
 
     const tradeId = "TheFirstTrade";
 
@@ -221,7 +232,18 @@ describe("Escrow tests", function () {
     await token.updateAllowedContracts(escrow.address, true);
     await token.updateFreeOfFeeContracts(escrow.address, true);
     await access.updateSignValidationWhitelist(escrow.address, true);
-    await access.updateTradeDeskUsers(tradeDesk.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await escrow.tradeDeskProof(
+        bytes32hex,
+        tradeDesk.address,
+        true
+      );
+      const signature = await manager.signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await escrow.setTradeDesk(signature, bytes32hex, tradeDesk.address, true);
+    }
 
     const tradeId = "TheFirstTrade";
 
