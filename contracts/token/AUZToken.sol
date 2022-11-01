@@ -415,7 +415,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             signature
         );
         require(signer == owner, "AUZToken: Signer is not owner");
-        _privateTransfer(owner, msg.sender, networkFee, false);
+        _privateTransfer(owner, feeWallet, networkFee, false);
         _approve(owner, spender, amount);
         emit DelegateApprove(msg.sender, owner, spender, amount);
         return true;
@@ -479,7 +479,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             signature
         );
         require(signer == owner, "AUZToken: Signer is not owner");
-        _privateTransfer(owner, msg.sender, networkFee, false);
+        _privateTransfer(owner, feeWallet, networkFee, false);
         _privateTransfer(owner, spender, amount, true);
         emit DelegateTransfer(msg.sender, owner, spender, amount);
         return true;
