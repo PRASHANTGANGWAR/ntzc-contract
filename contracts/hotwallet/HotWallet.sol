@@ -108,7 +108,7 @@ contract HotWallet is Initializable {
      * @param _buyer The address of user
      * @param _amount Amount of AZX
      */
-    function buyGold(address _buyer, uint256 _amount) external onlyManager {
+    function buy(address _buyer, uint256 _amount) external onlyManager {
         require(_amount <= BUY_LIMIT, "HotWallet: amount exceeds buy limit");
         require(_buyer != address(0), "HotWallet: zero address is not allowed");
         IERC20(azx).transfer(_buyer, _amount);
@@ -137,7 +137,7 @@ contract HotWallet is Initializable {
      * @param buyer The fee that will be paid to relayer for gas fee he spends
      * @param amount The amount to be allowed
      */
-    function buyGoldWithSignature(
+    function buyWithSignature(
         bytes memory signature,
         bytes32 token,
         address buyer,

@@ -18,15 +18,29 @@ async function main() {
   //   address: accessImpl,
   //   contract: "contracts/access/Access.sol:Access",
   // });
-  
-  const back = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
-  const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
-  
-  const Access = "0x2A51414644C14A42f83707E5D31101ce826C5A60";
-  const access = await ethers.getContractAt("Access", Access);
 
-  await access.updateSenders(signer, true);
-  await access.updateSigners(signer, true);
+  // const Token = await ethers.getContractFactory("Access");
+  // const token = await upgrades.upgradeProxy("0xC9815C6198ecdFdc477c8Ce3197f0c457cE54676", Token);
+  // await token.deployed();
+  // await waitBlocks(5);
+  // const tokenImpl = await getImplementationAddress(
+  //   ethers.provider,
+  //   token.address
+  // );
+  // console.log(`Token deployed to: ${token.address} => ${tokenImpl}`);
+  // await run("verify:verify", {
+  //   address: tokenImpl,
+  //   contract: "contracts/token/AUZToken.sol:AUZToken",
+  // });
+  
+  // const back = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
+  // const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
+  
+  // const Access = "0x2A51414644C14A42f83707E5D31101ce826C5A60";
+  // const access = await ethers.getContractAt("Access", Access);
+
+  // await access.updateSenders(signer, true);
+  // await access.updateSigners(signer, true);
 
   console.log("DONE!");
 }

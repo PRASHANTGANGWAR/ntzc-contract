@@ -45,16 +45,16 @@ contract LERC20Upgradeable is Initializable, ContextUpgradeable, ILERC20 {
 
     // --- LOSSLESS modifiers ---
 
-    modifier lssAprove(address spender, uint256 amount) {
+    modifier lssAprove(address owner, address spender, uint256 amount) {
         if (isLosslessOn) {
-            lossless.beforeApprove(_msgSender(), spender, amount);
+            lossless.beforeApprove(owner, spender, amount);
         }
         _;
     }
 
-    modifier lssTransfer(address recipient, uint256 amount) {
+    modifier lssTransfer(address owner, address recipient, uint256 amount) {
         if (isLosslessOn) {
-            lossless.beforeTransfer(_msgSender(), recipient, amount);
+            lossless.beforeTransfer(owner, recipient, amount);
         }
         _;
     }
@@ -220,7 +220,7 @@ contract LERC20Upgradeable is Initializable, ContextUpgradeable, ILERC20 {
         public
         virtual
         override
-        lssTransfer(recipient, amount)
+        lssTransfer(_msgSender(), recipient, amount)
         returns (bool)
     {
         _transfer(_msgSender(), recipient, amount);
@@ -241,7 +241,7 @@ contract LERC20Upgradeable is Initializable, ContextUpgradeable, ILERC20 {
         public
         virtual
         override
-        lssAprove(spender, amount)
+        lssAprove(_msgSender(), spender, amount)
         returns (bool)
     {
         _approve(_msgSender(), spender, amount);

@@ -16,8 +16,24 @@ describe("Hotwallet tests", function () {
       access.address,
     ]);
     await azx.deployed();
-    await azx.mintGold(BigInt(50000 * 1e8), ["wdfqf78qef8f"]);
-
+    const mintAmount = BigInt(50000 * 1e8);
+    await access.updateSignValidationWhitelist(azx.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
     const TD = await ethers.getContractFactory("HotWallet");
     const td = await upgrades.deployProxy(TD, [azx.address, access.address]);
     await td.deployed();
@@ -28,10 +44,10 @@ describe("Hotwallet tests", function () {
     await azx.transfer(td.address, BigInt(50000 * 1e8));
 
     await expect(
-      td.buyGold(signers[2].address, BigInt(10000 * 1e8))
+      td.buy(signers[2].address, BigInt(10000 * 1e8))
     ).to.be.revertedWith("HotWallet: amount exceeds buy limit");
 
-    await td.buyGold(signers[2].address, BigInt(1000 * 1e8));
+    await td.buy(signers[2].address, BigInt(1000 * 1e8));
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
       BigInt(1000 * 1e8)
     );
@@ -51,7 +67,24 @@ describe("Hotwallet tests", function () {
       access.address,
     ]);
     await azx.deployed();
-    await azx.mintGold(BigInt(50000 * 1e8), ["wdfqf78qef8f"]);
+    const mintAmount = BigInt(50000 * 1e8);
+    await access.updateSignValidationWhitelist(azx.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
 
     const TD = await ethers.getContractFactory("HotWallet");
     const td = await upgrades.deployProxy(TD, [azx.address, access.address]);
@@ -77,7 +110,7 @@ describe("Hotwallet tests", function () {
     );
 
     await expect(
-      td.buyGoldWithSignature(
+      td.buyWithSignature(
         falseSignature,
         tokenHashMock,
         signers[2].address,
@@ -85,7 +118,7 @@ describe("Hotwallet tests", function () {
       )
     ).to.be.revertedWith("HotWallet: Signer is not manager");
 
-    await td.buyGoldWithSignature(
+    await td.buyWithSignature(
       signature,
       tokenHashMock,
       signers[2].address,
@@ -110,7 +143,24 @@ describe("Hotwallet tests", function () {
       access.address,
     ]);
     await azx.deployed();
-    await azx.mintGold(BigInt(50000 * 1e8), ["wdfqf78qef8f"]);
+    const mintAmount = BigInt(50000 * 1e8);
+    await access.updateSignValidationWhitelist(azx.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
 
     const TD = await ethers.getContractFactory("HotWallet");
     const td = await upgrades.deployProxy(TD, [azx.address, access.address]);
@@ -121,7 +171,6 @@ describe("Hotwallet tests", function () {
     await azx.updateAllowedContracts(td.address, true);
     await azx.transfer(td.address, BigInt(50000 * 1e8));
     await access.updateSignValidationWhitelist(td.address, true);
-    await access.updateSignValidationWhitelist(azx.address, true);
 
     {
       const tokenHashMock = ethers.utils.randomBytes(32);
@@ -134,7 +183,7 @@ describe("Hotwallet tests", function () {
         ethers.utils.arrayify(message)
       );
 
-      await td.buyGoldWithSignature(
+      await td.buyWithSignature(
         signature,
         tokenHashMock,
         signers[2].address,

@@ -11,6 +11,7 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     mapping(address => bool) public minters; // Mapping of azx minters
     mapping(address => bool) public sendManagers; // Mapping of addresses who can send delegate trxs
     mapping(address => bool) public signManagers; // Mapping of addresses who can sign internal operations
+    mapping(address => bool) public tradeDeskManagers; // Mapping of addresses of TradeDesk users
 
     receive() external payable {
         revert("Accsess: Contract cannot work with ETH");
@@ -66,6 +67,20 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     {
         require(_manager != address(0), "Access: Zero address is not allowed");
         signManagers[_manager] = _isManager;
+    }
+
+    /**
+     * @notice Update addressess of TradeDesk users
+     * @dev Only owner can call
+     * @param _user The wallet of the user
+     * @param _isTradeDesk Bool variable that indicates is wallet is TradeDesk or not
+     */
+    function updateTradeDeskUsers(address _user, bool _isTradeDesk)
+        external
+    {
+        require(msg.sender == owner() || signManagers[msg.sender], "Access: Only owner or sign manager can call");
+        require(_user != address(0), "Access: Zero address is not allowed");
+        tradeDeskManagers[_user] = _isTradeDesk;
     }
 
     /**
@@ -131,6 +146,13 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      */
     function isSigner(address _manager) external view override returns (bool) {
         return signManagers[_manager];
+    }
+
+    /**
+     * @notice Check if address is TradeDesk user
+     */
+    function isTradeDesk(address _user) external view override returns (bool) {
+        return tradeDeskManagers[_user];
     }
 
     /**

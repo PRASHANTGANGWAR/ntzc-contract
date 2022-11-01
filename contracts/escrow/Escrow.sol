@@ -30,6 +30,7 @@ contract Escrow is Initializable {
         uint256 price;
         uint256 fee;
         uint256 timestamp;
+        bool valid;
         bool paid;
         bool approved;
         bool finished;
@@ -45,10 +46,16 @@ contract Escrow is Initializable {
         uint256 price,
         uint256 fee
     );
+    event TradeValidated(string tradeId);
     event TradePaid(string tradeId, uint256 amount);
     event TradeApproved(string tradeId);
     event TradeFinished(address signer, string tradeId);
-    event TradeResolved(address signer, string tradeId, bool result, string reason);
+    event TradeResolved(
+        address signer,
+        string tradeId,
+        bool result,
+        string reason
+    );
 
     modifier onlyOwner() {
         require(
@@ -62,6 +69,14 @@ contract Escrow is Initializable {
         require(
             IAccess(accessControl).isSender(msg.sender),
             "HotWallet: Only managers is allowed"
+        );
+        _;
+    }
+
+    modifier onlyTradeDesk() {
+        require(
+            IAccess(accessControl).isTradeDesk(msg.sender),
+            "HotWallet: Only TradeDesk is allowed"
         );
         _;
     }
@@ -179,8 +194,8 @@ contract Escrow is Initializable {
             signature
         );
         require(
-            IAccess(accessControl).isSigner(signer),
-            "HotWallet: Signer is not manager"
+            IAccess(accessControl).isTradeDesk(signer),
+            "HotWallet: Signer is not TradeDesk"
         );
         tradesCounter++;
         tradesIdsToTrades[_tradeId] = tradesCounter;
@@ -202,6 +217,44 @@ contract Escrow is Initializable {
             _price,
             _fee
         );
+    }
+
+    /**
+     * @dev Get message hash for signing for validateTrade
+     */
+    function validateProof(bytes32 token, string memory _tradeId)
+        public
+        view
+        returns (bytes32 message)
+    {
+        message = keccak256(abi.encodePacked(getChainID(), token, _tradeId));
+    }
+
+    /**
+     * @dev Validate trade
+     * @param signature Buyer's signature
+     * @param _tradeId External trade id
+     */
+    function validateTrade(
+        bytes memory signature,
+        bytes32 token,
+        string memory _tradeId
+    ) external onlyManager {
+        require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
+        Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
+        require(!trade.finished, "Escrow: Trade is finished");
+        bytes32 message = validateProof(token, _tradeId);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isSigner(signer),
+            "HotWallet: Signer is not manager"
+        );
+        trade.valid = true;
+        emit TradeValidated(_tradeId);
     }
 
     /**
@@ -230,6 +283,7 @@ contract Escrow is Initializable {
     ) external onlyManager {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
+        require(trade.valid, "Escrow: Trade is not valid");
         require(!trade.finished, "Escrow: Trade is finished");
         require(trade.buyer != address(0), "Escrow: Buyer is not confirmed");
         bytes32 message = payProof(token, _tradeId, _buyer);

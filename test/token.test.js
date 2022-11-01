@@ -19,12 +19,24 @@ describe("Token tests", function () {
       access.address,
     ]);
     await azx.deployed();
+    await access.updateSignValidationWhitelist(azx.address, true);
 
-    await azx.mintGold(mintAmount, [
-      "wdfqf78qef8f",
-      "qw7d98qfquf9q",
-      "8wq9fh89qef3r",
-    ]);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
 
     expect(BigInt(await azx.balanceOf(sellingWallet))).to.equal(mintAmount);
   });
@@ -47,15 +59,29 @@ describe("Token tests", function () {
     ]);
     await azx.deployed();
 
-    await expect(
-      azx
-        .connect(signers[1])
-        .mintGold(mintAmount, [
-          "wdfqf78qef8f",
-          "qw7d98qfquf9q",
-          "8wq9fh89qef3r",
-        ])
-    ).to.be.revertedWith("AUZToken: Only Minter is allowed");
+    await access.updateSignValidationWhitelist(azx.address, true);
+
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[1].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await expect(
+        azx
+          .mint(signature, bytes32hex, mintAmount, [
+            "wdfqf78qef8f",
+            "qw7d98qfquf9q",
+            "8wq9fh89qef3r",
+          ])
+      ).to.be.revertedWith("AUZToken: Signer is not minter");
+    }
+
+    
   });
 
   it("Should burn from token contract", async function () {
@@ -76,17 +102,44 @@ describe("Token tests", function () {
     ]);
     await azx.deployed();
 
-    azx.mintGold(mintAmount, [
-      "wdfqf78qef8f",
-      "qw7d98qfquf9q",
-      "8wq9fh89qef3r",
-    ]);
+    await access.updateSignValidationWhitelist(azx.address, true);
 
-    await azx.transfer(azx.address, mintAmount);
-    const balance = await azx.balanceOf(azx.address);
-    azx.burnGold(balance, ["wdfqf78qef8f"]);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
+    expect(BigInt(await azx.balanceOf(signers[0].address))).to.equal(BigInt(mintAmount));
 
-    expect(BigInt(await azx.balanceOf(azx.address))).to.equal(BigInt(0));
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.burnProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.burn(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
+
+    expect(BigInt(await azx.balanceOf(signers[0].address))).to.equal(BigInt(0));
   });
 
   it("Should revert transfers from not allowed contracts and vice versa", async function () {
@@ -111,11 +164,23 @@ describe("Token tests", function () {
     const someContract = await SomeContract.deploy();
     await someContract.deployed();
 
-    await azx.mintGold(mintAmount, [
-      "wdfqf78qef8f",
-      "qw7d98qfquf9q",
-      "8wq9fh89qef3r",
-    ]);
+    await access.updateSignValidationWhitelist(azx.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
 
     await azx.transfer(someContract.address, mintAmount);
     await expect(someContract.someFunction(azx.address)).to.be.revertedWith(
@@ -143,11 +208,23 @@ describe("Token tests", function () {
     ]);
     await azx.deployed();
 
-    await azx.mintGold(mintAmount, [
-      "wdfqf78qef8f",
-      "qw7d98qfquf9q",
-      "8wq9fh89qef3r",
-    ]);
+    await access.updateSignValidationWhitelist(azx.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
 
     await azx.updateCommissionTransfer(0); // 0% fee
     await azx.transfer(signers[1].address, BigInt(1000 * 1e8));
@@ -180,11 +257,23 @@ describe("Token tests", function () {
     ]);
     await azx.deployed();
 
-    await azx.mintGold(mintAmount, [
-      "wdfqf78qef8f",
-      "qw7d98qfquf9q",
-      "8wq9fh89qef3r",
-    ]);
+    await access.updateSignValidationWhitelist(azx.address, true);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
 
     await azx.updateCommissionTransfer(1000); // 1% fee
     await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
@@ -217,8 +306,22 @@ describe("Token tests", function () {
     ]);
     await azx.deployed();
     await access.updateSignValidationWhitelist(azx.address, true);
-
-    await azx.mintGold(mintAmount, ["wdfqf78qef8f"]);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
     await azx.transfer(signers[1].address, mintAmount);
 
     const bytes32hex = ethers.utils.randomBytes(32);
@@ -300,8 +403,22 @@ describe("Token tests", function () {
     ]);
     await azx.deployed();
     await access.updateSignValidationWhitelist(azx.address, true);
-
-    await azx.mintGold(mintAmount, ["wdfqf78qef8f"]);
+    {
+      const bytes32hex = ethers.utils.randomBytes(32);
+      const message = await azx.mintProof(bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+      const signature = await signers[0].signMessage(
+        ethers.utils.arrayify(message)
+      );
+      await azx.mint(signature, bytes32hex, mintAmount, [
+        "wdfqf78qef8f",
+        "qw7d98qfquf9q",
+        "8wq9fh89qef3r",
+      ]);
+    }
     await azx.updateCommissionTransfer(0);
     await azx.transfer(signers[1].address, mintAmount);
 

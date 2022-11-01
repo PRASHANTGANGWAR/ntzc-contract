@@ -39,7 +39,6 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     uint8 private decimal;
 
     // These variable help to calculate the commissions on each token transfer transcation
-    uint256 public MINT_FEE_PERCENT; // commission percentage on minting
     uint256 public TRANSFER_FEE_PERCENT; // commission percentage on transfer
     uint256 public PERCENT_COEFICIENT; // denominator for percentage calculation
 
@@ -64,18 +63,27 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     //Mapping of addresses of contracts that are free of transfer fee
     mapping(address => bool) public freeOfFeeContracts;
 
+    //ETH LOSSLESS 0xe91D7cEBcE484070fc70777cB04F7e2EfAe31DB4
+    //BSCTEST LOSSLESS 0xC46236F780f1294B2C2a8c3cE5B4d62258dC2619
+
     function initialize(
         address _sellingWallet,
         address _feeWallet,
         address _accessControl
     ) external initializer {
-        __LERC20_init("AUZToken", "AUZ", msg.sender, msg.sender, 86400, address(0xe91D7cEBcE484070fc70777cB04F7e2EfAe31DB4));
+        __LERC20_init(
+            "AUZToken",
+            "AUZ",
+            msg.sender,
+            msg.sender,
+            86400,
+            address(0xC46236F780f1294B2C2a8c3cE5B4d62258dC2619)
+        );
         __Pausable_init();
         feeWallet = _feeWallet;
         sellingWallet = _sellingWallet;
         accessControl = _accessControl;
         decimal = 8;
-        MINT_FEE_PERCENT = 0; // 0.000%
         TRANSFER_FEE_PERCENT = 1; // 0.001%
         PERCENT_COEFICIENT = 100000; // 100000 = 100%, minimum value is 0.001%.
     }
@@ -190,20 +198,6 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
-     * @notice Update commission to be charged on token minting
-     * @dev Only owner can call
-     * @param _mintFeePercent The comission percent
-     */
-    function updateCommissionMint(uint256 _mintFeePercent) public onlyOwner {
-        require(
-            _mintFeePercent <= PERCENT_COEFICIENT,
-            "AUZToken: Commission cannot be more than 100%"
-        );
-        MINT_FEE_PERCENT = _mintFeePercent;
-        emit CommissionUpdate(MINT_FEE_PERCENT, "Minting commision");
-    }
-
-    /**
      * @notice Update commission to be charged on token transfer
      * @dev Only owner can call
      * @param _transferFeePercent The comission percent
@@ -221,40 +215,90 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
+     * @dev Get message hash for signing for burn AUZ
+     */
+    function burnProof(
+        bytes32 token,
+        uint256 _value,
+        string[] memory _hashes
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, _value, _hashes[0])
+        );
+    }
+
+    /**
      * @notice transfer tokens from contract
      * @dev Only owner can call, tokens will be transferred and equivalent amount of ZToken will be burnt.
-     * @param _amount the amount of tokens to be transferred
+     * @param signature Minters signature
+     * @param _value the amount of tokens to be transferred
      * @param _hashes The array of IPFS hashes of the gold burn proofs
      */
-    function burnGold(uint256 _amount, string[] memory _hashes)
-        external
-        onlyMinter
-        whenNotPaused
-    {
+    function burn(
+        bytes memory signature,
+        bytes32 token,
+        uint256 _value,
+        string[] memory _hashes
+    ) external onlyManager whenNotPaused {
+        require(_hashes.length > 0, "AUZToken: No proofs provided");
+        bytes32 message = burnProof(token, _value, _hashes);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isMinter(signer),
+            "AUZToken: Signer is not minter"
+        );
         for (uint256 i = 0; i < _hashes.length; i++) {
             burningProofs[burningProofsCounter] = _hashes[i];
             burningProofsCounter++;
         }
-        _burn(address(this), _amount);
+        _burn(sellingWallet, _value);
+    }
+
+    /**
+     * @dev Get message hash for signing for mint AUZ
+     */
+    function mintProof(
+        bytes32 token,
+        uint256 _value,
+        string[] memory _hashes
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), _value, token, _hashes[0])
+        );
     }
 
     /**
      * @notice Minting of AUZtokens backed by gold tokens
+     * @param signature Minters signature
      * @param _value The amount transferred
      * @param _hashes The array of IPFS hashes of the gold mint proofs
      */
-    function mintGold(uint256 _value, string[] memory _hashes)
-        public
-        onlyMinter
-        whenNotPaused
-    {
-        uint256 fee = calculateCommissionMint(_value);
-        if (fee > 0) _mint(feeWallet, fee);
+    function mint(
+        bytes memory signature,
+        bytes32 token,
+        uint256 _value,
+        string[] memory _hashes
+    ) public onlyManager whenNotPaused {
+        require(_hashes.length > 0, "AUZToken: No proofs provided");
+        bytes32 message = mintProof(token, _value, _hashes);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
+        require(
+            IAccess(accessControl).isMinter(signer),
+            "AUZToken: Signer is not minter"
+        );
         for (uint256 i = 0; i < _hashes.length; i++) {
             mintingProofs[mintingProofsCounter] = _hashes[i];
             mintingProofsCounter++;
         }
-        _mint(sellingWallet, _value - fee);
+        _mint(sellingWallet, _value);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -276,6 +320,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         override
         whenNotPaused
         onlyAllowedContracts
+        lssTransfer(msg.sender, recipient, amount)
         returns (bool)
     {
         _privateTransfer(msg.sender, recipient, amount, true);
@@ -299,6 +344,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         override
         whenNotPaused
         onlyAllowedContracts
+        lssTransferFrom(sender, recipient, amount)
         returns (bool)
     {
         uint256 currentAllowance = allowance(sender, _msgSender());
@@ -349,7 +395,13 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         address spender,
         uint256 amount,
         uint256 networkFee
-    ) external whenNotPaused onlyManager returns (bool) {
+    )
+        external
+        whenNotPaused
+        onlyManager
+        lssAprove(owner, spender, amount)
+        returns (bool)
+    {
         bytes32 message = delegateApproveProof(
             token,
             owner,
@@ -357,7 +409,11 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             amount,
             networkFee
         );
-        address signer = IAccess(accessControl).preAuthValidations(message, token, signature);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
         require(signer == owner, "AUZToken: Signer is not owner");
         _privateTransfer(owner, msg.sender, networkFee, false);
         _approve(owner, spender, amount);
@@ -403,7 +459,13 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         address spender,
         uint256 amount,
         uint256 networkFee
-    ) external whenNotPaused onlyManager returns (bool) {
+    )
+        external
+        whenNotPaused
+        onlyManager
+        lssTransfer(owner, spender, amount)
+        returns (bool)
+    {
         bytes32 message = delegateTransferProof(
             token,
             owner,
@@ -411,7 +473,11 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             amount,
             networkFee
         );
-        address signer = IAccess(accessControl).preAuthValidations(message, token, signature);
+        address signer = IAccess(accessControl).preAuthValidations(
+            message,
+            token,
+            signature
+        );
         require(signer == owner, "AUZToken: Signer is not owner");
         _privateTransfer(owner, msg.sender, networkFee, false);
         _privateTransfer(owner, spender, amount, true);
@@ -444,20 +510,6 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         }
         _transfer(_from, _recipient, _amount);
         return true;
-    }
-
-    /**
-     * @notice check Minting fee
-     * @dev Does not checks if sender/recipient is whitelisted
-     * @param _amount The intended amount of transfer
-     * @return uint256 Calculated commission
-     */
-    function calculateCommissionMint(uint256 _amount)
-        public
-        view
-        returns (uint256)
-    {
-        return (_amount * MINT_FEE_PERCENT) / PERCENT_COEFICIENT;
     }
 
     /**

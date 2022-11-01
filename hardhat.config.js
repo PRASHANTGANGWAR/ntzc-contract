@@ -28,13 +28,13 @@ module.exports = {
     hardhat: {
       forking: {
         // ** ETH **
-        url: process.env.ETH_FORK_URL,
+        // url: process.env.ETH_FORK_URL,
         // ** BSC **
         // url: process.env.BSC_FORK_URL,
         // ** POL **
         // url: process.env.POL_FORK_URL,
         // ** BSC TESTNET **
-        // url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+        url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       }
     },
     mumbai: {
