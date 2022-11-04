@@ -159,6 +159,7 @@ describe("Token tests", function () {
       access.address,
     ]);
     await azx.deployed();
+    await azx.updateCommissionTransfer(0)
 
     const SomeContract = await ethers.getContractFactory("SomeContract");
     const someContract = await SomeContract.deploy();
@@ -235,7 +236,7 @@ describe("Token tests", function () {
     await azx.updateCommissionTransfer(1000); // 1% fee
     await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
-      BigInt(990 * 1e8)
+      BigInt(1000 * 1e8)
     );
   });
 
@@ -278,7 +279,7 @@ describe("Token tests", function () {
     await azx.updateCommissionTransfer(1000); // 1% fee
     await azx.transfer(signers[2].address, BigInt(1000 * 1e8));
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
-      BigInt(990 * 1e8)
+      BigInt(1000 * 1e8)
     );
 
     await azx.updateFreeOfFeeContracts(signers[0].address, true); // 0% fee
