@@ -9,7 +9,7 @@ contract Escrow is Initializable {
     uint256 public tradesCounter;
     // Address of AZK token
     address public azx;
-    // Address of wallet for receiving fees
+    // Address of wallet for receiving fee
     address public auzWallet;
     // Address of access control contract
     address public accessControl;
@@ -24,8 +24,8 @@ contract Escrow is Initializable {
         string tradeId;
         address seller;
         address buyer;
-        uint256 price;
-        uint256 fee;
+        uint256 tradeCap;
+        uint256 sellersPart;
         uint256 timeToResolve;
         uint256 resolveTS;
         bool valid;
@@ -40,8 +40,8 @@ contract Escrow is Initializable {
         string indexed tradeId,
         address seller,
         address buyer,
-        uint256 price,
-        uint256 fee,
+        uint256 tradeCap,
+        uint256 sellersPart,
         uint256 timeToResolve
     );
     event TradeValidated(string tradeId);
@@ -51,7 +51,7 @@ contract Escrow is Initializable {
         string tradeId,
         address buyer,
         uint256 cap,
-        uint256 fee
+        uint256 sellersPart
     );
     event TradeResolved(
         address signer,
@@ -91,7 +91,7 @@ contract Escrow is Initializable {
     /**
      * @dev Initializes the contract
      * @param _auzToken Address of AZK token
-     * @param _auzWallet Address of wallet for receiving fees
+     * @param _auzWallet Address of wallet for receiving fee
      */
     function initialize(
         address _auzToken,
@@ -104,8 +104,8 @@ contract Escrow is Initializable {
     }
 
     /**
-     * @dev Changes address of wallet for receiving fees (for owner only)
-     * @param _wallet Address of wallet for receiving fees
+     * @dev Changes address of wallet for receiving fee (for owner only)
+     * @param _wallet Address of wallet for receiving fee
      */
     function changeWallet(address _wallet) external onlyOwner {
         require(_wallet != address(0), "Escrow: Zero address is not allowed");
@@ -168,8 +168,8 @@ contract Escrow is Initializable {
         string memory _tradeId,
         address _seller,
         address _buyer,
-        uint256 _price,
-        uint256 _fee,
+        uint256 _tradeCap,
+        uint256 _sellersPart,
         uint256 _timeToResolve
     ) public view returns (bytes32 message) {
         message = keccak256(
@@ -179,8 +179,8 @@ contract Escrow is Initializable {
                 _tradeId,
                 _seller,
                 _buyer,
-                _price,
-                _fee,
+                _tradeCap,
+                _sellersPart,
                 _timeToResolve
             )
         );
@@ -191,8 +191,8 @@ contract Escrow is Initializable {
      * @param _tradeId External trade id
      * @param _seller Address of seller
      * @param _buyer Address of buyer
-     * @param _price Price of trade
-     * @param _fee Fee of trade
+     * @param _tradeCap Price of trade
+     * @param _sellersPart Part of tradeCap for seller
      */
     function registerTrade(
         bytes memory signature,
@@ -200,8 +200,8 @@ contract Escrow is Initializable {
         string memory _tradeId,
         address _seller,
         address _buyer,
-        uint256 _price,
-        uint256 _fee,
+        uint256 _tradeCap,
+        uint256 _sellersPart,
         uint256 _timeToResolve
     ) external onlyManager {
         require(
@@ -213,8 +213,8 @@ contract Escrow is Initializable {
             _tradeId,
             _seller,
             _buyer,
-            _price,
-            _fee,
+            _tradeCap,
+            _sellersPart,
             _timeToResolve
         );
         address signer = IAccess(accessControl).preAuthValidations(
@@ -232,8 +232,8 @@ contract Escrow is Initializable {
         trade.tradeId = _tradeId;
         trade.seller = _seller;
         trade.buyer = _buyer;
-        trade.price = _price;
-        trade.fee = _fee;
+        trade.tradeCap = _tradeCap;
+        trade.sellersPart = _sellersPart;
         trade.timeToResolve = _timeToResolve;
 
         emit TradeRegistered(
@@ -241,8 +241,8 @@ contract Escrow is Initializable {
             _tradeId,
             _seller,
             _buyer,
-            _price,
-            _fee,
+            _tradeCap,
+            _sellersPart,
             _timeToResolve
         );
     }
@@ -329,11 +329,11 @@ contract Escrow is Initializable {
             azx,
             _buyer,
             address(this),
-            trade.price + trade.fee
+            trade.tradeCap
         );
         trade.paid = true;
 
-        emit TradePaid(_tradeId, trade.price + trade.fee);
+        emit TradePaid(_tradeId, trade.tradeCap);
     }
 
     /**
@@ -415,11 +415,15 @@ contract Escrow is Initializable {
         );
         require(!trade.released, "Escrow: Trade is released");
         require(trade.finished, "Escrow: Trade is not finished");
-        TransferHelper.safeTransfer(azx, trade.seller, trade.price - trade.fee);
-        TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
+        TransferHelper.safeTransfer(azx, trade.seller, trade.sellersPart);
+        TransferHelper.safeTransfer(
+            azx,
+            auzWallet,
+            trade.tradeCap - trade.sellersPart
+        );
         trade.released = true;
 
-        emit TradeReleased(_tradeId, _buyer, trade.price, trade.fee);
+        emit TradeReleased(_tradeId, _buyer, trade.tradeCap, trade.sellersPart);
     }
 
     /**
@@ -473,14 +477,18 @@ contract Escrow is Initializable {
                 TransferHelper.safeTransfer(
                     azx,
                     trade.seller,
-                    trade.price - trade.fee
+                    trade.sellersPart
                 );
-                TransferHelper.safeTransfer(azx, auzWallet, trade.fee);
+                TransferHelper.safeTransfer(
+                    azx,
+                    auzWallet,
+                    trade.tradeCap - trade.sellersPart
+                );
             } else {
                 TransferHelper.safeTransfer(
                     azx,
                     trade.buyer,
-                    trade.price + trade.fee
+                    trade.tradeCap
                 );
             }
         }
@@ -500,8 +508,8 @@ contract Escrow is Initializable {
         returns (
             address seller,
             address buyer,
-            uint256 price,
-            uint256 fee,
+            uint256 tradeCap,
+            uint256 sellersPart,
             bool valid,
             bool paid,
             bool finished,
@@ -511,8 +519,8 @@ contract Escrow is Initializable {
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
         seller = trade.seller;
         buyer = trade.buyer;
-        price = trade.price;
-        fee = trade.fee;
+        tradeCap = trade.tradeCap;
+        sellersPart = trade.sellersPart;
         valid = trade.valid;
         paid = trade.paid;
         finished = trade.finished;

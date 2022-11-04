@@ -72,7 +72,7 @@ describe("Escrow tests", function () {
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
-        BigInt(100 * 1e8),
+        BigInt(900 * 1e8),
         "60000"
       );
       const signature = await tradeDesk.signMessage(
@@ -85,13 +85,13 @@ describe("Escrow tests", function () {
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
-        BigInt(100 * 1e8),
+        BigInt(900 * 1e8),
         "60000"
       );
 
       const trade = await escrow.getTrade(tradeId);
-      expect(BigInt(trade.price)).to.equal(BigInt(1000 * 1e8));
-      expect(BigInt(trade.fee)).to.equal(BigInt(100 * 1e8));
+      expect(BigInt(trade.tradeCap)).to.equal(BigInt(1000 * 1e8));
+      expect(BigInt(trade.sellersPart)).to.equal(BigInt(900 * 1e8));
       expect(trade.seller).to.equal(seller.address);
       expect(trade.buyer).to.equal(buyer.address);
     }
@@ -143,7 +143,7 @@ describe("Escrow tests", function () {
 
       const trade = await escrow.getTrade(tradeId);
       expect(await token.balanceOf(escrow.address)).to.equal(
-        BigInt(1100 * 1e8)
+        BigInt(1000 * 1e8)
       );
       expect(trade.paid).to.equal(true);
     }
@@ -256,7 +256,7 @@ describe("Escrow tests", function () {
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
-        BigInt(100 * 1e8),
+        BigInt(900 * 1e8),
         "60000"
       );
       const signature = await tradeDesk.signMessage(
@@ -269,13 +269,13 @@ describe("Escrow tests", function () {
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
-        BigInt(100 * 1e8),
+        BigInt(900 * 1e8),
         "60000"
       );
 
       const trade = await escrow.getTrade(tradeId);
-      expect(BigInt(trade.price)).to.equal(BigInt(1000 * 1e8));
-      expect(BigInt(trade.fee)).to.equal(BigInt(100 * 1e8));
+      expect(BigInt(trade.tradeCap)).to.equal(BigInt(1000 * 1e8));
+      expect(BigInt(trade.sellersPart)).to.equal(BigInt(900 * 1e8));
       expect(trade.seller).to.equal(seller.address);
       expect(trade.buyer).to.equal(buyer.address);
     }
@@ -327,7 +327,7 @@ describe("Escrow tests", function () {
 
       const trade = await escrow.getTrade(tradeId);
       expect(await token.balanceOf(escrow.address)).to.equal(
-        BigInt(1100 * 1e8)
+        BigInt(1000 * 1e8)
       );
       expect(trade.paid).to.equal(true);
     }
