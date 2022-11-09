@@ -74,13 +74,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "price",
+        "name": "tradeCap",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "fee",
+        "name": "sellersPart",
         "type": "uint256"
       },
       {
@@ -117,7 +117,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "fee",
+        "name": "sellersPart",
         "type": "uint256"
       }
     ],
@@ -302,12 +302,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "price",
+        "name": "tradeCap",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "fee",
+        "name": "sellersPart",
         "type": "uint256"
       },
       {
@@ -438,12 +438,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "_price",
+        "name": "_tradeCap",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_fee",
+        "name": "_sellersPart",
         "type": "uint256"
       },
       {
@@ -492,12 +492,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "_price",
+        "name": "_tradeCap",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_fee",
+        "name": "_sellersPart",
         "type": "uint256"
       },
       {
@@ -719,12 +719,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "price",
+        "name": "tradeCap",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "fee",
+        "name": "sellersPart",
         "type": "uint256"
       },
       {

@@ -41,7 +41,7 @@ async function main() {
     contract: "contracts/token/AUZToken.sol:AUZToken",
   });
 
-  // HotWallet deployed to: 0x5CdE1b89f757eDdA8f149d6d63C7dE764C83d498 => 0x1bA41623160Ef93a69877641Db713e79Fb49206a
+  // HotWallet deployed to: 0x5CdE1b89f757eDdA8f149d6d63C7dE764C83d498 => 0x18807080950A9e034c46fBCEFc952F5D115B4C7C
   const HW = await ethers.getContractFactory("HotWallet");
   const hw = await upgrades.deployProxy(HW, [azx.address, access.address]);
   await hw.deployed();
@@ -53,7 +53,7 @@ async function main() {
     contract: "contracts/hotwallet/HotWallet.sol:HotWallet",
   });
 
-  // Escrow deployed to: 0xae1B5Ee408c92334195331167C1BDf3Fcc26a42e => 0x24d53A079d35caceCCB550F001D545171bCdb049
+  // Escrow deployed to: 0xE91Fe1A637F63038995E9923c0D06A5ba5C78Ec4 => 0x8D41b55e19D9D9613F46a234ed11eB9De11e0d38
   const Escrow = await ethers.getContractFactory("Escrow");
   const escrow = await upgrades.deployProxy(Escrow, [
     azx.address,

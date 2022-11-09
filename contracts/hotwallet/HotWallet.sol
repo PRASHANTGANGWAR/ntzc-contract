@@ -196,6 +196,7 @@ contract HotWallet is Initializable {
         require(seller == signer, "HotWallet: Signer is not seller");
         IERC20(azx).transferFrom(seller, msg.sender, networkFee);
         IERC20(azx).transferFrom(seller, address(this), amount);
+        require(saleRequests[saleId].seller == address(0), "HotWallet: saleId already exists");
         saleRequests[saleId] = SaleRequest(
             saleId,
             signer,
