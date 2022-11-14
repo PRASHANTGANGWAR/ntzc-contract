@@ -69,6 +69,7 @@ describe("Escrow tests", function () {
       const message = await escrow.registerProof(
         tokenHashMock,
         tradeId,
+        [""],
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
@@ -82,6 +83,7 @@ describe("Escrow tests", function () {
         signature,
         tokenHashMock,
         tradeId,
+        [""],
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
@@ -99,11 +101,11 @@ describe("Escrow tests", function () {
     // VALIDATE TRADE
     {
       const tokenHashMock = ethers.utils.randomBytes(32);
-      const message = await escrow.validateProof(tokenHashMock, tradeId);
+      const message = await escrow.validateProof(tokenHashMock, tradeId, [""]);
       const signature = await manager.signMessage(
         ethers.utils.arrayify(message)
       );
-      await escrow.validateTrade(signature, tokenHashMock, tradeId);
+      await escrow.validateTrade(signature, tokenHashMock, tradeId, [""]);
 
       const trade = await escrow.getTrade(tradeId);
       expect(trade.valid).to.equal(true);
@@ -136,10 +138,17 @@ describe("Escrow tests", function () {
       const message = await escrow.payProof(
         tokenHashMock,
         tradeId,
+        [""],
         buyer.address
       );
       const signature = await buyer.signMessage(ethers.utils.arrayify(message));
-      await escrow.payTrade(signature, tokenHashMock, tradeId, buyer.address);
+      await escrow.payTrade(
+        signature,
+        tokenHashMock,
+        tradeId,
+        [""],
+        buyer.address
+      );
 
       const trade = await escrow.getTrade(tradeId);
       expect(await token.balanceOf(escrow.address)).to.equal(
@@ -151,12 +160,12 @@ describe("Escrow tests", function () {
     // FINISH TRADE
     {
       const tokenHashMock = ethers.utils.randomBytes(32);
-      const message = await escrow.finishProof(tokenHashMock, tradeId);
+      const message = await escrow.finishProof(tokenHashMock, tradeId, [""]);
       const signature = await tradeDesk.signMessage(
         ethers.utils.arrayify(message)
       );
 
-      await escrow.finishTrade(signature, tokenHashMock, tradeId);
+      await escrow.finishTrade(signature, tokenHashMock, tradeId, [""]);
 
       const trade = await escrow.getTrade(tradeId);
       expect(trade.finished).to.equal(true);
@@ -168,6 +177,7 @@ describe("Escrow tests", function () {
       const message = await escrow.releaseProof(
         tokenHashMock,
         tradeId,
+        [""],
         buyer.address
       );
       const managerBal = await token.balanceOf(manager.address);
@@ -176,6 +186,7 @@ describe("Escrow tests", function () {
         signature,
         tokenHashMock,
         tradeId,
+        [""],
         buyer.address
       );
 
@@ -253,6 +264,7 @@ describe("Escrow tests", function () {
       const message = await escrow.registerProof(
         tokenHashMock,
         tradeId,
+        [""],
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
@@ -266,6 +278,7 @@ describe("Escrow tests", function () {
         signature,
         tokenHashMock,
         tradeId,
+        [""],
         seller.address,
         buyer.address,
         BigInt(1000 * 1e8),
@@ -283,11 +296,11 @@ describe("Escrow tests", function () {
     // VALIDATE TRADE
     {
       const tokenHashMock = ethers.utils.randomBytes(32);
-      const message = await escrow.validateProof(tokenHashMock, tradeId);
+      const message = await escrow.validateProof(tokenHashMock, tradeId, [""]);
       const signature = await manager.signMessage(
         ethers.utils.arrayify(message)
       );
-      await escrow.validateTrade(signature, tokenHashMock, tradeId);
+      await escrow.validateTrade(signature, tokenHashMock, tradeId, [""]);
 
       const trade = await escrow.getTrade(tradeId);
       expect(trade.valid).to.equal(true);
@@ -320,10 +333,11 @@ describe("Escrow tests", function () {
       const message = await escrow.payProof(
         tokenHashMock,
         tradeId,
+        [""],
         buyer.address
       );
       const signature = await buyer.signMessage(ethers.utils.arrayify(message));
-      await escrow.payTrade(signature, tokenHashMock, tradeId, buyer.address);
+      await escrow.payTrade(signature, tokenHashMock, tradeId, [""], buyer.address);
 
       const trade = await escrow.getTrade(tradeId);
       expect(await token.balanceOf(escrow.address)).to.equal(
@@ -335,12 +349,12 @@ describe("Escrow tests", function () {
     // FINISH TRADE
     {
       const tokenHashMock = ethers.utils.randomBytes(32);
-      const message = await escrow.finishProof(tokenHashMock, tradeId);
+      const message = await escrow.finishProof(tokenHashMock, tradeId, [""]);
       const signature = await tradeDesk.signMessage(
         ethers.utils.arrayify(message)
       );
 
-      await escrow.finishTrade(signature, tokenHashMock, tradeId);
+      await escrow.finishTrade(signature, tokenHashMock, tradeId, [""]);
 
       const trade = await escrow.getTrade(tradeId);
       expect(trade.finished).to.equal(true);
@@ -352,6 +366,7 @@ describe("Escrow tests", function () {
       const message = await escrow.resolveProof(
         tokenHashMock,
         tradeId,
+        [""],
         true,
         "Some reason..."
       );
@@ -365,6 +380,7 @@ describe("Escrow tests", function () {
           signature,
           tokenHashMock,
           tradeId,
+          [""],
           true,
           "Some reason..."
         )
@@ -377,6 +393,7 @@ describe("Escrow tests", function () {
         signature,
         tokenHashMock,
         tradeId,
+        [""],
         true,
         "Some reason..."
       );

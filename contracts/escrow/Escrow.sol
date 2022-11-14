@@ -134,7 +134,9 @@ contract Escrow is Initializable {
         address user,
         bool isTradeDesk
     ) public view returns (bytes32 message) {
-        message = keccak256(abi.encodePacked(getChainID(), token, user, isTradeDesk));
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, user, isTradeDesk)
+        );
     }
 
     /**
@@ -244,8 +246,13 @@ contract Escrow is Initializable {
         trade.timeToResolve = _timeToResolve;
 
         for (uint256 i = 0; i < _links.length; i++) {
-            trade.links[trade.linksLength] = _links[i];
-            trade.linksLength++;
+            if (
+                keccak256(abi.encodePacked(_links[i])) !=
+                keccak256(abi.encodePacked(""))
+            ) {
+                trade.links.push(_links[i]);
+                trade.linksLength++;
+            }
         }
 
         emit TradeRegistered(
@@ -281,8 +288,8 @@ contract Escrow is Initializable {
     function validateTrade(
         bytes memory signature,
         bytes32 token,
-        string[] memory _links,
-        string memory _tradeId
+        string memory _tradeId,
+        string[] memory _links
     ) external onlyManager {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
@@ -300,8 +307,13 @@ contract Escrow is Initializable {
         );
         trade.valid = true;
         for (uint256 i = 0; i < _links.length; i++) {
-            trade.links[trade.linksLength] = _links[i];
-            trade.linksLength++;
+            if (
+                keccak256(abi.encodePacked(_links[i])) !=
+                keccak256(abi.encodePacked(""))
+            ) {
+                trade.links.push(_links[i]);
+                trade.linksLength++;
+            }
         }
         emit TradeValidated(_tradeId);
     }
@@ -356,8 +368,13 @@ contract Escrow is Initializable {
         );
         trade.paid = true;
         for (uint256 i = 0; i < _links.length; i++) {
-            trade.links[trade.linksLength] = _links[i];
-            trade.linksLength++;
+            if (
+                keccak256(abi.encodePacked(_links[i])) !=
+                keccak256(abi.encodePacked(""))
+            ) {
+                trade.links.push(_links[i]);
+                trade.linksLength++;
+            }
         }
 
         emit TradePaid(_tradeId, trade.tradeCap);
@@ -405,8 +422,13 @@ contract Escrow is Initializable {
         trade.finished = true;
         trade.resolveTS = block.timestamp + trade.timeToResolve;
         for (uint256 i = 0; i < _links.length; i++) {
-            trade.links[trade.linksLength] = _links[i];
-            trade.linksLength++;
+            if (
+                keccak256(abi.encodePacked(_links[i])) !=
+                keccak256(abi.encodePacked(""))
+            ) {
+                trade.links.push(_links[i]);
+                trade.linksLength++;
+            }
         }
 
         emit TradeFinished(_tradeId);
@@ -461,8 +483,13 @@ contract Escrow is Initializable {
         );
         trade.released = true;
         for (uint256 i = 0; i < _links.length; i++) {
-            trade.links[trade.linksLength] = _links[i];
-            trade.linksLength++;
+            if (
+                keccak256(abi.encodePacked(_links[i])) !=
+                keccak256(abi.encodePacked(""))
+            ) {
+                trade.links.push(_links[i]);
+                trade.linksLength++;
+            }
         }
 
         emit TradeReleased(_tradeId, _buyer, trade.tradeCap, trade.sellersPart);
@@ -549,8 +576,13 @@ contract Escrow is Initializable {
 
         trade.released = true;
         for (uint256 i = 0; i < _links.length; i++) {
-            trade.links[trade.linksLength] = _links[i];
-            trade.linksLength++;
+            if (
+                keccak256(abi.encodePacked(_links[i])) !=
+                keccak256(abi.encodePacked(""))
+            ) {
+                trade.links.push(_links[i]);
+                trade.linksLength++;
+            }
         }
 
         emit TradeResolved(signer, _tradeId, _result, _reason);

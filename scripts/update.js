@@ -49,7 +49,7 @@ async function main() {
 
   // const Escrow = await ethers.getContractFactory("Escrow");
   // const escrow = await upgrades.upgradeProxy(
-  //   "0xE91Fe1A637F63038995E9923c0D06A5ba5C78Ec4",
+  //   "0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC",
   //   Escrow
   // );
   // await escrow.deployed();
@@ -58,7 +58,7 @@ async function main() {
   // console.log(`Escrow deployed to: ${escrow.address} => ${escrowImpl}`);
   // await run("verify:verify", {
   //   address: escrowImpl,
-  //   contract: "contracts/hotwallet/Escrow.sol:Escrow",
+  //   contract: "contracts/escrow/Escrow.sol:Escrow",
   // });
 
 

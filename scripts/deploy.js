@@ -25,7 +25,7 @@ async function main() {
     contract: "contracts/access/Access.sol:Access",
   });
 
-  // AZX deployed to: 0x1994Fd475c4769138A6f834141DAEc362516497F => 0x936E11Db2a226e6fFEEC76885f75F3d43e2031AB
+  // AZX deployed to: 0x1994Fd475c4769138A6f834141DAEc362516497F => 0x8FB9c7724B79E4b93490B4Bb2e76b13A478249AA
   const AZX = await ethers.getContractFactory("AUZToken");
   const azx = await upgrades.deployProxy(AZX, [
     admin.address,
