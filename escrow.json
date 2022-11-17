@@ -231,6 +231,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       }
     ],
     "name": "finishProof",
@@ -260,6 +265,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       }
     ],
     "name": "finishTrade",
@@ -291,6 +301,11 @@
     "name": "getTrade",
     "outputs": [
       {
+        "internalType": "string[]",
+        "name": "links",
+        "type": "string[]"
+      },
+      {
         "internalType": "address",
         "name": "seller",
         "type": "address"
@@ -299,6 +314,11 @@
         "internalType": "address",
         "name": "buyer",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "linksLenght",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -370,6 +390,11 @@
         "type": "string"
       },
       {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
+      },
+      {
         "internalType": "address",
         "name": "_buyer",
         "type": "address"
@@ -404,6 +429,11 @@
         "type": "string"
       },
       {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
+      },
+      {
         "internalType": "address",
         "name": "_buyer",
         "type": "address"
@@ -425,6 +455,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       },
       {
         "internalType": "address",
@@ -481,6 +516,11 @@
         "type": "string"
       },
       {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
+      },
+      {
         "internalType": "address",
         "name": "_seller",
         "type": "address"
@@ -524,6 +564,11 @@
         "type": "string"
       },
       {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
+      },
+      {
         "internalType": "address",
         "name": "_buyer",
         "type": "address"
@@ -558,6 +603,11 @@
         "type": "string"
       },
       {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
+      },
+      {
         "internalType": "address",
         "name": "_buyer",
         "type": "address"
@@ -579,6 +629,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       },
       {
         "internalType": "bool",
@@ -618,6 +673,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       },
       {
         "internalType": "bool",
@@ -738,6 +798,11 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "linksLength",
+        "type": "uint256"
+      },
+      {
         "internalType": "bool",
         "name": "valid",
         "type": "bool"
@@ -804,6 +869,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       }
     ],
     "name": "validateProof",
@@ -833,6 +903,11 @@
         "internalType": "string",
         "name": "_tradeId",
         "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_links",
+        "type": "string[]"
       }
     ],
     "name": "validateTrade",

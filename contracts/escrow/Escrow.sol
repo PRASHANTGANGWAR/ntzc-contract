@@ -73,7 +73,7 @@ contract Escrow is Initializable {
     modifier onlyManager() {
         require(
             IAccess(accessControl).isSender(msg.sender),
-            "HotWallet: Only managers is allowed"
+            "Escrow: Only managers is allowed"
         );
         _;
     }
@@ -81,7 +81,7 @@ contract Escrow is Initializable {
     modifier onlyTradeDesk() {
         require(
             IAccess(accessControl).isTradeDesk(msg.sender),
-            "HotWallet: Only TradeDesk is allowed"
+            "Escrow: Only TradeDesk is allowed"
         );
         _;
     }
@@ -159,7 +159,7 @@ contract Escrow is Initializable {
         );
         require(
             IAccess(accessControl).isSigner(signer),
-            "HotWallet: Signer is not manager"
+            "Escrow: Signer is not manager"
         );
         IAccess(accessControl).updateTradeDeskUsers(user, isTradeDesk);
     }
@@ -233,7 +233,7 @@ contract Escrow is Initializable {
         );
         require(
             IAccess(accessControl).isTradeDesk(signer),
-            "HotWallet: Signer is not TradeDesk"
+            "Escrow: Signer is not TradeDesk"
         );
         tradesCounter++;
         tradesIdsToTrades[_tradeId] = tradesCounter;
@@ -303,7 +303,7 @@ contract Escrow is Initializable {
         );
         require(
             IAccess(accessControl).isSigner(signer),
-            "HotWallet: Signer is not manager"
+            "Escrow: Signer is not manager"
         );
         trade.valid = true;
         for (uint256 i = 0; i < _links.length; i++) {
@@ -417,7 +417,7 @@ contract Escrow is Initializable {
         );
         require(
             IAccess(accessControl).isTradeDesk(signer),
-            "HotWallet: Signer is not TradeDesk"
+            "Escrow: Signer is not TradeDesk"
         );
         trade.finished = true;
         trade.resolveTS = block.timestamp + trade.timeToResolve;
