@@ -53,7 +53,7 @@ async function main() {
     contract: "contracts/hotwallet/HotWallet.sol:HotWallet",
   });
 
-  // Escrow deployed to: 0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC => 0x378d5110543388786f6A7d38dA97bBc3a3e77823
+  // Escrow deployed to: 0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC => 0x02cd7d521F0322e4420b7D56F7e4A86aB791A51c
   const Escrow = await ethers.getContractFactory("Escrow");
   const escrow = await upgrades.deployProxy(Escrow, [
     azx.address,

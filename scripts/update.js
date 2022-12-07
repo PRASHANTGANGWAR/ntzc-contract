@@ -47,7 +47,12 @@ async function main() {
   //   contract: "contracts/hotwallet/HotWallet.sol:HotWallet",
   // });
 
-  // const Escrow = await ethers.getContractFactory("Escrow");
+  const Escrow = await ethers.getContractFactory("Escrow");
+  // await upgrades.forceImport(
+  //   "0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC",
+  //   Escrow
+  // );
+
   // const escrow = await upgrades.upgradeProxy(
   //   "0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC",
   //   Escrow
@@ -56,11 +61,10 @@ async function main() {
   // await waitBlocks(5);
   // const escrowImpl = await getImplementationAddress(ethers.provider, escrow.address);
   // console.log(`Escrow deployed to: ${escrow.address} => ${escrowImpl}`);
-  // await run("verify:verify", {
-  //   address: escrowImpl,
-  //   contract: "contracts/escrow/Escrow.sol:Escrow",
-  // });
-
+  await run("verify:verify", {
+    address: "0x02cd7d521F0322e4420b7D56F7e4A86aB791A51c",
+    contract: "contracts/escrow/Escrow.sol:Escrow",
+  });
 
   // const back = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
   // const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
@@ -81,34 +85,27 @@ main()
     process.exit(1);
   });
 
+// const azx = await ethers.getContractAt("AUZToken", "0x1994Fd475c4769138A6f834141DAEc362516497F");
+// const access = await ethers.getContractAt("Access", "0xf74Fa7226237c54Acb18211fb3b2FC62AAFF8fa9");
 
+// const Escrow = await ethers.getContractFactory("Escrow");
+// const escrow = await upgrades.deployProxy(Escrow, [
+//   azx.address,
+//   "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
+//   access.address,
+// ]);
+// await escrow.deployed();
+// await waitBlocks(5);
+// const escrowImpl = await getImplementationAddress(
+//   ethers.provider,
+//   escrow.address
+// );
+// console.log(`Escrow deployed to: ${escrow.address} => ${escrowImpl}`);
+// await run("verify:verify", {
+//   address: escrowImpl,
+//   contract: "contracts/escrow/Escrow.sol:Escrow",
+// });
 
-
-
-
-
-
-  // const azx = await ethers.getContractAt("AUZToken", "0x1994Fd475c4769138A6f834141DAEc362516497F");
-  // const access = await ethers.getContractAt("Access", "0xf74Fa7226237c54Acb18211fb3b2FC62AAFF8fa9");
-
-  // const Escrow = await ethers.getContractFactory("Escrow");
-  // const escrow = await upgrades.deployProxy(Escrow, [
-  //   azx.address,
-  //   "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
-  //   access.address,
-  // ]);
-  // await escrow.deployed();
-  // await waitBlocks(5);
-  // const escrowImpl = await getImplementationAddress(
-  //   ethers.provider,
-  //   escrow.address
-  // );
-  // console.log(`Escrow deployed to: ${escrow.address} => ${escrowImpl}`);
-  // await run("verify:verify", {
-  //   address: escrowImpl,
-  //   contract: "contracts/escrow/Escrow.sol:Escrow",
-  // });
-
-  // await access.updateSignValidationWhitelist(escrow.address, true);
-  // await azx.updateAllowedContracts(escrow.address, true);
-  // await azx.updateFreeOfFeeContracts(escrow.address, true);
+// await access.updateSignValidationWhitelist(escrow.address, true);
+// await azx.updateAllowedContracts(escrow.address, true);
+// await azx.updateFreeOfFeeContracts(escrow.address, true);
