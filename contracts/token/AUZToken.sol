@@ -241,6 +241,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         string[] memory _hashes
     ) external onlyManager whenNotPaused {
         require(_hashes.length > 0, "AUZToken: No proofs provided");
+        require(_value > 0, "AUZToken: Value must be greater than 0");
         bytes32 message = burnProof(token, _value, _hashes);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
@@ -284,6 +285,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         string[] memory _hashes
     ) public onlyManager whenNotPaused {
         require(_hashes.length > 0, "AUZToken: No proofs provided");
+        require(_value > 0, "AUZToken: Value must be greater than 0");
         bytes32 message = mintProof(token, _value, _hashes);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
