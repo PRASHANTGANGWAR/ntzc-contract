@@ -45,7 +45,7 @@ describe("Hotwallet tests", function () {
 
     await expect(
       td.buy(signers[2].address, BigInt(10000 * 1e8))
-    ).to.be.revertedWith("HotWallet: amount exceeds buy limit");
+    ).to.be.revertedWith("HotWallet: Amount exceeds the buy limit");
 
     await td.buy(signers[2].address, BigInt(1000 * 1e8));
     expect(BigInt(await azx.balanceOf(signers[2].address))).to.equal(
@@ -116,7 +116,7 @@ describe("Hotwallet tests", function () {
         signers[2].address,
         BigInt(10000 * 1e8)
       )
-    ).to.be.revertedWith("HotWallet: Signer is not manager");
+    ).to.be.revertedWith("HotWallet: Signer is not a manager");
 
     await td.buyWithSignature(
       signature,

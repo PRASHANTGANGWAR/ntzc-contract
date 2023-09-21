@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -11,7 +10,7 @@ contract HotWallet is Initializable {
     address public azx;
     address public accessControl;
 
-    mapping(bytes32 => SaleRequest) public saleRequests; // mapping to track sale requests
+    mapping(bytes32 => SaleRequest) public saleRequests; // Mapping to track sale requests
 
     struct SaleRequest {
         bytes32 saleId;
@@ -42,13 +41,13 @@ contract HotWallet is Initializable {
         uint256 amount
     );
     event SaleRequestProcessed(address admin, bytes32 saleId, bool isApproved);
-    event BuyLimitUpdates(uint256 newLimit);
-    event TokensWithdrawed(address token, address to, uint256 amount);
+    event BuyLimitUpdated(uint256 newLimit);
+    event TokensWithdrawn(address token, address to, uint256 amount);
 
     modifier onlyOwner() {
         require(
             IAccess(accessControl).isOwner(msg.sender),
-            "AUZToken: Only owner is allowed"
+            "HotWallet: Only the owner is allowed"
         );
         _;
     }
@@ -56,7 +55,7 @@ contract HotWallet is Initializable {
     modifier onlyManager() {
         require(
             IAccess(accessControl).isSender(msg.sender),
-            "HotWallet: Only managers is allowed"
+            "HotWallet: Only managers are allowed"
         );
         _;
     }
@@ -73,79 +72,57 @@ contract HotWallet is Initializable {
     }
 
     /**
-     * @dev ID of the executing chain
-     * @return uint value
-     */
-    function getChainID() public view returns (uint256) {
-        uint256 id;
-        assembly {
-            id := chainid()
-        }
-        return id;
-    }
-
-    /**
-     * @notice Update limit for buy without second manager signature
-     * @dev Only owner can call
-     * @param _limit Limit for buy without second manager signature
-     */
-    function updateBuyLimit(uint256 _limit) external onlyOwner {
-        BUY_LIMIT = _limit;
-
-        emit BuyLimitUpdates(_limit);
-    }
-
-    /**
-     * @notice Withdraw from contract any token
-     * @dev Only owner can call
-     * @param _token Token address for withdrawing
-     * @param _to Destination address
-     * @param _amount Withdrawing amount
-     */
-    function withdraw(
-        address _token,
-        address _to,
-        uint256 _amount
-    ) external onlyOwner {
-        require(_to != address(0), "HotWallet: zero address is not allowed");
-        IERC20(_token).transfer(_to, _amount);
-
-        emit TokensWithdrawed(_token, _to, _amount);
-    }
-
-    /**
-     * @notice Send AZX tokens from this contract to user with amount limit
-     * @dev Only managers can call
-     * @param _buyer The address of user
-     * @param _amount Amount of AZX
+     * @notice Send AZX tokens from this contract to a user with an amount limit
+     * @dev Only managers can call this function
+     * @param _buyer The address of the user
+     * @param _amount The amount of AZX
      */
     function buy(address _buyer, uint256 _amount) external onlyManager {
-        require(_amount <= BUY_LIMIT, "HotWallet: amount exceeds buy limit");
-        require(_buyer != address(0), "HotWallet: zero address is not allowed");
+        require(
+            _amount <= BUY_LIMIT,
+            "HotWallet: Amount exceeds the buy limit"
+        );
+        require(_buyer != address(0), "HotWallet: Zero address is not allowed");
         IERC20(azx).transfer(_buyer, _amount);
 
         emit Buy(_buyer, _amount);
     }
 
     /**
-     * @notice Get proof for admin for buy with signature
+     * @notice Update the limit for buying without a second manager's signature
+     * @dev Only the owner can call this function
+     * @param _limit The limit for buying without a second manager's signature
      */
-    function getBuyProof(
-        bytes32 token,
-        address buyer,
-        uint256 amount
-    ) public view returns (bytes32 message) {
-        message = keccak256(
-            abi.encodePacked(getChainID(), token, buyer, amount)
-        );
+    function updateBuyLimit(uint256 _limit) external onlyOwner {
+        BUY_LIMIT = _limit;
+
+        emit BuyLimitUpdated(_limit);
     }
 
     /**
-     * @notice Send AZX tokens from this contract to user without limit and with second manager signature
-     * @dev Only managers can call
-     * @param signature Signature
+     * @notice Withdraw any token from the contract
+     * @dev Only the owner can call this function
+     * @param _token The token address to withdraw
+     * @param _to The destination address
+     * @param _amount The amount to withdraw
+     */
+    function withdraw(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external onlyOwner {
+        require(_to != address(0), "HotWallet: Zero address is not allowed");
+        IERC20(_token).transfer(_to, _amount);
+
+        emit TokensWithdrawn(_token, _to, _amount);
+    }
+
+    /**
+     * @notice Send AZX tokens from this contract to a user without a limit and with a second manager's signature
+     * @dev Only managers can call this function
+     * @param signature The signature
      * @param token The unique token for each delegated function
-     * @param buyer The fee that will be paid to relayer for gas fee he spends
+     * @param buyer The fee that will be paid to the relayer for the gas fee spent
      * @param amount The amount to be allowed
      */
     function buyWithSignature(
@@ -162,7 +139,7 @@ contract HotWallet is Initializable {
         );
         require(
             IAccess(accessControl).isSigner(signer),
-            "HotWallet: Signer is not manager"
+            "HotWallet: Signer is not a manager"
         );
         IERC20(azx).transfer(buyer, amount);
 
@@ -170,25 +147,11 @@ contract HotWallet is Initializable {
     }
 
     /**
-     * @notice Get proof for user for signing sale operations of its tokens
-     */
-    function getSaleProof(
-        bytes32 token,
-        address seller,
-        uint256 amount,
-        uint256 networkFee
-    ) public view returns (bytes32 message) {
-        message = keccak256(
-            abi.encodePacked(getChainID(), token, seller, amount, networkFee)
-        );
-    }
-
-    /**
-     * @notice Delegated sell of AZX (takes tokens and creates request). Gas fee will be paid by relayer
-     * @param signature Signature
+     * @notice Delegated sale of AZX (takes tokens and creates a request). Gas fee will be paid by the relayer
+     * @param signature The signature
      * @param token The unique token for each delegated function
-     * @param networkFee The fee that will be paid to relayer for gas fee he spends
-     * @param amount The array of amounts to be selled
+     * @param networkFee The fee that will be paid to the relayer for the gas fee spent
+     * @param amount The array of amounts to be sold
      */
     function preAuthorizedSell(
         bytes memory signature,
@@ -204,12 +167,12 @@ contract HotWallet is Initializable {
             token,
             signature
         );
-        require(seller == signer, "HotWallet: Signer is not seller");
+        require(seller == signer, "HotWallet: Signer is not the seller");
         IERC20(azx).transferFrom(seller, msg.sender, networkFee);
         IERC20(azx).transferFrom(seller, address(this), amount);
         require(
             saleRequests[saleId].seller == address(0),
-            "HotWallet: saleId already exists"
+            "HotWallet: Sale ID already exists"
         );
         saleRequests[saleId] = SaleRequest(
             saleId,
@@ -224,23 +187,10 @@ contract HotWallet is Initializable {
     }
 
     /**
-     * @notice Get proof for admin for process sale request
-     */
-    function getSaleProcessProof(
-        bytes32 token,
-        bytes32 saleId,
-        bool isApproved
-    ) public view returns (bytes32 message) {
-        message = keccak256(
-            abi.encodePacked(getChainID(), token, saleId, isApproved)
-        );
-    }
-
-    /**
-     * @notice Admins approving of sale request
-     * @dev Signer of signature and trx sender must be different and both must be admins
-     * @param saleId ID of the sale request
-     * @param isApproved Admins decision about the request
+     * @notice Admins approve or reject a sale request
+     * @dev The signer of the signature and the transaction sender must be different and both must be admins
+     * @param saleId The ID of the sale request
+     * @param isApproved Admins' decision about the request
      */
     function processSaleRequest(
         bytes memory signature,
@@ -256,7 +206,7 @@ contract HotWallet is Initializable {
         );
         require(
             IAccess(accessControl).isSigner(signer),
-            "HotWallet: Signer is not manager"
+            "HotWallet: Signer is not a manager"
         );
         require(
             saleRequests[saleId].isProcessed == false,
@@ -264,7 +214,7 @@ contract HotWallet is Initializable {
         );
         require(
             saleRequests[saleId].seller != address(0),
-            "HotWallet: Request is not exist"
+            "HotWallet: Request does not exist"
         );
         if (!isApproved) {
             require(
@@ -278,5 +228,57 @@ contract HotWallet is Initializable {
         saleRequests[saleId].isProcessed = true;
         saleRequests[saleId].isApproved = isApproved;
         emit SaleRequestProcessed(signer, saleId, isApproved);
+    }
+
+    /**
+     * @dev Get the ID of the executing chain
+     * @return uint256 value
+     */
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    /**
+     * @notice Get proof for an admin for buying with a signature
+     */
+    function getBuyProof(
+        bytes32 token,
+        address buyer,
+        uint256 amount
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, buyer, amount)
+        );
+    }
+
+    /**
+     * @notice Get proof for a user for signing sale operations of its tokens
+     */
+    function getSaleProof(
+        bytes32 token,
+        address seller,
+        uint256 amount,
+        uint256 networkFee
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, seller, amount, networkFee)
+        );
+    }
+
+    /**
+     * @notice Get proof for an admin for processing a sale request
+     */
+    function getSaleProcessProof(
+        bytes32 token,
+        bytes32 saleId,
+        bool isApproved
+    ) public view returns (bytes32 message) {
+        message = keccak256(
+            abi.encodePacked(getChainID(), token, saleId, isApproved)
+        );
     }
 }

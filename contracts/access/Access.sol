@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -6,11 +7,11 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./IAccess.sol";
 
 contract Access is Initializable, OwnableUpgradeable, IAccess {
-    mapping(address => bool) public signValidationWhitelist; //Mapping of sddresses of contracts who can use preAuthValidations
-    mapping(address => mapping(bytes32 => bool)) public tokenUsed; //Mapping to track token is used or not
-    mapping(address => bool) public minters; // Mapping of azx minters
-    mapping(address => bool) public sendManagers; // Mapping of addresses who can send delegate trxs
-    mapping(address => bool) public signManagers; // Mapping of addresses who can sign internal operations
+    mapping(address => bool) public signValidationWhitelist; // Mapping of addresses of contracts that can use preAuthValidations
+    mapping(address => mapping(bytes32 => bool)) public tokenUsed; // Mapping to track if a token has been used or not
+    mapping(address => bool) public minters; // Mapping of AZX minters
+    mapping(address => bool) public sendManagers; // Mapping of addresses that can send delegate transactions
+    mapping(address => bool) public signManagers; // Mapping of addresses that can sign internal operations
     mapping(address => bool) public tradeDeskManagers; // Mapping of addresses of TradeDesk users
 
     event SignatureValidated(address indexed signer, bytes32 token);
@@ -18,10 +19,6 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
-    }
-
-    receive() external payable {
-        revert("Accsess: Contract cannot work with ETH");
     }
 
     /**
@@ -35,11 +32,15 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
         tradeDeskManagers[msg.sender] = true;
     }
 
+    receive() external payable {
+        revert("Access: Contract cannot work with ETH");
+    }
+
     /**
-     * @notice Update managers roles for addresses
-     * @dev Only owner can call
+     * @notice Update manager roles for addresses
+     * @dev Only the owner can call this function
      * @param _manager The wallet of the user
-     * @param _isManager Bool variable that indicates is wallet is manager or not
+     * @param _isManager Bool variable indicating whether the wallet is a manager or not
      */
     function updateMinters(
         address _manager,
@@ -50,10 +51,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     }
 
     /**
-     * @notice Update addressess who can send delegate trxs
-     * @dev Only owner can call
+     * @notice Update addresses that can send delegate transactions
+     * @dev Only the owner can call this function
      * @param _manager The wallet of the user
-     * @param _isManager Bool variable that indicates is wallet is manager or not
+     * @param _isManager Bool variable indicating whether the wallet is a manager or not
      */
     function updateSenders(
         address _manager,
@@ -64,10 +65,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     }
 
     /**
-     * @notice Update addressess who can sign delegate operations
-     * @dev Only owner can call
+     * @notice Update addresses that can sign delegate operations
+     * @dev Only the owner can call this function
      * @param _manager The wallet of the user
-     * @param _isManager Bool variable that indicates is wallet is manager or not
+     * @param _isManager Bool variable indicating whether the wallet is a manager or not
      */
     function updateSigners(
         address _manager,
@@ -78,10 +79,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     }
 
     /**
-     * @notice Update addressess of TradeDesk users
-     * @dev Only owner can call
+     * @notice Update addresses of TradeDesk users
+     * @dev Only the owner or sign manager can call this function
      * @param _user The wallet of the user
-     * @param _isTradeDesk Bool variable that indicates is wallet is TradeDesk or not
+     * @param _isTradeDesk Bool variable indicating whether the wallet is a TradeDesk user or not
      */
     function updateTradeDeskUsers(
         address _user,
@@ -89,17 +90,17 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     ) external override {
         require(
             msg.sender == owner() || signValidationWhitelist[msg.sender],
-            "Access: Only owner or sign manager can call"
+            "Access: Only the owner or sign manager can call this function"
         );
         require(_user != address(0), "Access: Zero address is not allowed");
         tradeDeskManagers[_user] = _isTradeDesk;
     }
 
     /**
-     * @notice Update whitelist of addresses of contracts who can use preAuthValidations
-     * @dev Only owner can call
+     * @notice Update whitelist of addresses of contracts that can use preAuthValidations
+     * @dev Only the owner can call this function
      * @param _contract The address of the contract
-     * @param _canValidate Bool variable that indicates is address can use preAuthValidations
+     * @param _canValidate Bool variable indicating whether the address can use preAuthValidations
      */
     function updateSignValidationWhitelist(
         address _contract,
@@ -111,10 +112,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
 
     /**
      * @notice Validates the message and signature
-     * @param message The message that user signed
+     * @param message The message that the user signed
      * @param signature Signature
      * @param token The unique token for each delegated function
-     * @return address Signer of message
+     * @return address Signer of the message
      */
     function preAuthValidations(
         bytes32 message,
@@ -135,45 +136,45 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     }
 
     /**
-     * @notice Check if address is owner
+     * @notice Check if an address is the owner
      */
     function isOwner(address _manager) external view override returns (bool) {
         return _manager == owner();
     }
 
     /**
-     * @notice Check if address is minter
+     * @notice Check if an address is a minter
      */
     function isMinter(address _manager) external view override returns (bool) {
         return minters[_manager];
     }
 
     /**
-     * @notice Check if address is sender
+     * @notice Check if an address is a sender
      */
     function isSender(address _manager) external view override returns (bool) {
         return sendManagers[_manager];
     }
 
     /**
-     * @notice Check if address is signer
+     * @notice Check if an address is a signer
      */
     function isSigner(address _manager) external view override returns (bool) {
         return signManagers[_manager];
     }
 
     /**
-     * @notice Check if address is TradeDesk user
+     * @notice Check if an address is a TradeDesk user
      */
     function isTradeDesk(address _user) external view override returns (bool) {
         return tradeDeskManagers[_user];
     }
 
     /**
-     * @notice Find signer
-     * @param message The message that user signed
+     * @notice Find the signer
+     * @param message The message that the user signed
      * @param signature Signature
-     * @return address Signer of message
+     * @return address Signer of the message
      */
     function getSigner(
         bytes32 message,

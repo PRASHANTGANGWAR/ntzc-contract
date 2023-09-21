@@ -370,7 +370,7 @@ describe("Token tests", function () {
           BigInt(1000 * 1e8),
           BigInt(1 * 1e8)
         )
-    ).to.be.revertedWith("AUZToken: Only managers is allowed");
+    ).to.be.revertedWith("AUZToken: Only managers are allowed");
 
     await azx.delegateApprove(
       signature,
@@ -457,7 +457,7 @@ describe("Token tests", function () {
           BigInt(1000 * 1e8),
           0
         )
-    ).to.be.revertedWith("AUZToken: Only managers is allowed");
+    ).to.be.revertedWith("AUZToken: Only managers are allowed");
 
     await azx.delegateTransfer(
       signature,

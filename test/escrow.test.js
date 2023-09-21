@@ -384,7 +384,7 @@ describe("Escrow tests", function () {
           true,
           "Some reason..."
         )
-      ).to.be.revertedWith("Escrow: To early to resolve");
+      ).to.be.revertedWith("Escrow: Too early to resolve");
 
       await network.provider.send("evm_increaseTime", [60000]); // Waiting for resolving period
       await network.provider.send("evm_mine");
