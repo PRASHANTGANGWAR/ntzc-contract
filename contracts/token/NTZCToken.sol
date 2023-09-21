@@ -10,11 +10,11 @@ import "../lossless/LERC20.sol";
 import "../access/IAccess.sol";
 
 /**
- * @title AUZToken
- * @notice Contract for the AUZToken
+ * @title NTZCToken
+ * @notice Contract for the NTZCToken
  * @dev All function calls are currently implemented without side effects
  */
-contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
+contract NTZCToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     using AddressUpgradeable for address;
 
     // Events
@@ -56,7 +56,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     modifier onlyOwner() {
         require(
             IAccess(accessControl).isOwner(msg.sender),
-            "AUZToken: Only the owner is allowed"
+            "NTZCToken: Only the owner is allowed"
         );
         _;
     }
@@ -64,7 +64,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     modifier onlyManager() {
         require(
             IAccess(accessControl).isSender(msg.sender),
-            "AUZToken: Only managers are allowed"
+            "NTZCToken: Only managers are allowed"
         );
         _;
     }
@@ -74,7 +74,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             (address(msg.sender).isContract() &&
                 allowedContracts[msg.sender]) ||
                 !address(msg.sender).isContract(),
-            "AUZToken: Contract doesn't have permission to transfer tokens"
+            "NTZCToken: Contract doesn't have permission to transfer tokens"
         );
         _;
     }
@@ -90,8 +90,8 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         address _accessControl
     ) external initializer {
         __LERC20_init(
-            "AUZToken",
-            "AUZ",
+            "NTZCToken",
+            "NTZC",
             msg.sender,
             msg.sender,
             86400,
@@ -115,7 +115,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
-     * @notice Pause all operations with AUZ
+     * @notice Pause all operations with NTZC
      * @dev Only the owner can call this function
      */
     function pause() external onlyOwner {
@@ -123,7 +123,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
-     * @notice Unpause all operations with AUZ
+     * @notice Unpause all operations with NTZC
      * @dev Only the owner can call this function
      */
     function unpause() external onlyOwner {
@@ -171,8 +171,8 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         uint256 _value,
         string[] memory _hashes
     ) external onlyManager whenNotPaused {
-        require(_hashes.length > 0, "AUZToken: No proofs provided");
-        require(_value > 0, "AUZToken: Value must be greater than 0");
+        require(_hashes.length > 0, "NTZCToken: No proofs provided");
+        require(_value > 0, "NTZCToken: Value must be greater than 0");
         bytes32 message = burnProof(token, _value, _hashes);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
@@ -181,7 +181,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         );
         require(
             IAccess(accessControl).isMinter(signer),
-            "AUZToken: Signer is not minter"
+            "NTZCToken: Signer is not minter"
         );
         for (uint256 i = 0; i < _hashes.length; i++) {
             burningProofs[burningProofsCounter] = _hashes[i];
@@ -191,7 +191,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
-     * @notice Minting of AUZ tokens backed by gold tokens
+     * @notice Minting of NTZC tokens backed by gold tokens
      * @param signature Minters signature
      * @param _value The amount transferred
      * @param _hashes The array of IPFS hashes of the gold mint proofs
@@ -202,8 +202,8 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         uint256 _value,
         string[] memory _hashes
     ) public onlyManager whenNotPaused {
-        require(_hashes.length > 0, "AUZToken: No proofs provided");
-        require(_value > 0, "AUZToken: Value must be greater than 0");
+        require(_hashes.length > 0, "NTZCToken: No proofs provided");
+        require(_value > 0, "NTZCToken: Value must be greater than 0");
         bytes32 message = mintProof(token, _value, _hashes);
         address signer = IAccess(accessControl).preAuthValidations(
             message,
@@ -212,7 +212,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
         );
         require(
             IAccess(accessControl).isMinter(signer),
-            "AUZToken: Signer is not minter"
+            "NTZCToken: Signer is not minter"
         );
         for (uint256 i = 0; i < _hashes.length; i++) {
             mintingProofs[mintingProofsCounter] = _hashes[i];
@@ -255,7 +255,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             token,
             signature
         );
-        require(signer == owner, "AUZToken: Signer is not owner");
+        require(signer == owner, "NTZCToken: Signer is not owner");
         _privateTransfer(owner, feeWallet, networkFee, false);
         _approve(owner, spender, amount);
         emit DelegateApprove(msg.sender, owner, spender, amount);
@@ -296,7 +296,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
             token,
             signature
         );
-        require(signer == owner, "AUZToken: Signer is not owner");
+        require(signer == owner, "NTZCToken: Signer is not owner");
         _privateTransfer(owner, feeWallet, networkFee, false);
         _privateTransfer(owner, spender, amount, true);
         emit DelegateTransfer(msg.sender, owner, spender, amount);
@@ -304,7 +304,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
-     * @dev Get the message hash for signing for burn AUZ
+     * @dev Get the message hash for signing for burn NTZC
      */
     function burnProof(
         bytes32 token,
@@ -317,7 +317,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     }
 
     /**
-     * @dev Get the message hash for signing for mint AUZ
+     * @dev Get the message hash for signing for mint NTZC
      */
     function mintProof(
         bytes32 token,
@@ -436,7 +436,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     function updateFeeWallet(address _feeWallet) public onlyOwner {
         require(
             _feeWallet != address(0),
-            "AUZToken: Zero address is not allowed"
+            "NTZCToken: Zero address is not allowed"
         );
         feeWallet = _feeWallet;
         emit FeeWalletUpdated(_feeWallet);
@@ -450,7 +450,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     function updateSellingWallet(address _sellingWallet) public onlyOwner {
         require(
             _sellingWallet != address(0),
-            "AUZToken: Zero address is not allowed"
+            "NTZCToken: Zero address is not allowed"
         );
         sellingWallet = _sellingWallet;
         emit SellingWalletUpdated(_sellingWallet);
@@ -466,7 +466,7 @@ contract AUZToken is Initializable, PausableUpgradeable, LERC20Upgradeable {
     ) public onlyOwner {
         require(
             _transferFeePercent <= PERCENT_COEFFICIENT,
-            "AUZToken: Commission cannot be more than 100%"
+            "NTZCToken: Commission cannot be more than 100%"
         );
         TRANSFER_FEE_PERCENT = _transferFeePercent;
         emit CommissionUpdate(TRANSFER_FEE_PERCENT, "Transfer commission");

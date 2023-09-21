@@ -12,7 +12,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
     // Address of AZX token
     address public azx;
     // Address of the wallet for receiving fees
-    address public auzWallet;
+    address public ntzcWallet;
     // Address of the access control contract
     address public accessControl;
 
@@ -105,7 +105,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
         __ReentrancyGuard_init();
         accessControl = _access;
         azx = _azxToken;
-        auzWallet = _azxWallet;
+        ntzcWallet = _azxWallet;
     }
 
     /**
@@ -114,7 +114,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
      */
     function changeWallet(address _wallet) external onlyOwner {
         require(_wallet != address(0), "Escrow: Zero address is not allowed");
-        auzWallet = _wallet;
+        ntzcWallet = _wallet;
 
         emit FeeWalletChanged(_wallet);
     }
@@ -401,7 +401,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
         TransferHelper.safeTransfer(azx, trade.seller, trade.sellersPart);
         TransferHelper.safeTransfer(
             azx,
-            auzWallet,
+            ntzcWallet,
             trade.tradeCap - trade.sellersPart
         );
         trade.released = true;
@@ -466,7 +466,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
                 );
                 TransferHelper.safeTransfer(
                     azx,
-                    auzWallet,
+                    ntzcWallet,
                     trade.tradeCap - trade.sellersPart
                 );
             } else {

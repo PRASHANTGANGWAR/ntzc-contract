@@ -26,7 +26,7 @@ async function main() {
   });
 
   // AZX deployed to: 0x1994Fd475c4769138A6f834141DAEc362516497F => 0x8FB9c7724B79E4b93490B4Bb2e76b13A478249AA
-  const AZX = await ethers.getContractFactory("AUZToken");
+  const AZX = await ethers.getContractFactory("NTZCToken");
   const azx = await upgrades.deployProxy(AZX, [
     admin.address,
     "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
@@ -38,7 +38,7 @@ async function main() {
   console.log(`AZX deployed to: ${azx.address} => ${azxImpl}`);
   await run("verify:verify", {
     address: azxImpl,
-    contract: "contracts/token/AUZToken.sol:AUZToken",
+    contract: "contracts/token/NTZCToken.sol:NTZCToken",
   });
 
   // HotWallet deployed to: 0x5CdE1b89f757eDdA8f149d6d63C7dE764C83d498 => 0x18807080950A9e034c46fBCEFc952F5D115B4C7C

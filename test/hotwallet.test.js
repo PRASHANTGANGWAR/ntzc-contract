@@ -9,7 +9,7 @@ describe("Hotwallet tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       signers[0].address,
       signers[0].address,
@@ -60,7 +60,7 @@ describe("Hotwallet tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       signers[0].address,
       signers[0].address,
@@ -136,7 +136,7 @@ describe("Hotwallet tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       signers[0].address,
       signers[0].address,

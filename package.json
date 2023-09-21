@@ -1,5 +1,5 @@
 {
-  "name": "auz-contracts",
+  "name": "ntzc-contracts",
   "dependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/providers": "^5.7.0",

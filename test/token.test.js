@@ -12,7 +12,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -51,7 +51,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -78,7 +78,7 @@ describe("Token tests", function () {
             "qw7d98qfquf9q",
             "8wq9fh89qef3r",
           ])
-      ).to.be.revertedWith("AUZToken: Signer is not minter");
+      ).to.be.revertedWith("NTZCToken: Signer is not minter");
     }
 
     
@@ -94,7 +94,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -152,7 +152,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -185,7 +185,7 @@ describe("Token tests", function () {
 
     await azx.transfer(someContract.address, mintAmount);
     await expect(someContract.someFunction(azx.address)).to.be.revertedWith(
-      "AUZToken: Contract doesn't have permission to transfer tokens"
+      "NTZCToken: Contract doesn't have permission to transfer tokens"
     );
     await azx.updateAllowedContracts(someContract.address, true);
     await someContract.someFunction(azx.address);
@@ -201,7 +201,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -250,7 +250,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -299,7 +299,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -346,7 +346,7 @@ describe("Token tests", function () {
         BigInt(100000 * 1e8),
         BigInt(1000 * 1e8)
       )
-    ).to.be.revertedWith("AUZToken: Signer is not owner");
+    ).to.be.revertedWith("NTZCToken: Signer is not owner");
 
     await expect(
       azx.delegateTransfer(
@@ -357,7 +357,7 @@ describe("Token tests", function () {
         BigInt(100000 * 1e8),
         BigInt(1000 * 1e8)
       )
-    ).to.be.revertedWith("AUZToken: Signer is not owner"); // it means that proof is invalid (ECDSA recover wrong address from wrong signature)
+    ).to.be.revertedWith("NTZCToken: Signer is not owner"); // it means that proof is invalid (ECDSA recover wrong address from wrong signature)
 
     await expect(
       azx
@@ -370,7 +370,7 @@ describe("Token tests", function () {
           BigInt(1000 * 1e8),
           BigInt(1 * 1e8)
         )
-    ).to.be.revertedWith("AUZToken: Only managers are allowed");
+    ).to.be.revertedWith("NTZCToken: Only managers are allowed");
 
     await azx.delegateApprove(
       signature,
@@ -396,7 +396,7 @@ describe("Token tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const AZX = await ethers.getContractFactory("AUZToken");
+    const AZX = await ethers.getContractFactory("NTZCToken");
     const azx = await upgrades.deployProxy(AZX, [
       sellingWallet,
       signers[0].address,
@@ -444,7 +444,7 @@ describe("Token tests", function () {
         BigInt(100000 * 1e8),
         BigInt(1000 * 1e8)
       )
-    ).to.be.revertedWith("AUZToken: Signer is not owner");
+    ).to.be.revertedWith("NTZCToken: Signer is not owner");
 
     await expect(
       azx
@@ -457,7 +457,7 @@ describe("Token tests", function () {
           BigInt(1000 * 1e8),
           0
         )
-    ).to.be.revertedWith("AUZToken: Only managers are allowed");
+    ).to.be.revertedWith("NTZCToken: Only managers are allowed");
 
     await azx.delegateTransfer(
       signature,

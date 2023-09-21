@@ -183,7 +183,7 @@
   },
   {
     "inputs": [],
-    "name": "auzWallet",
+    "name": "ntzcWallet",
     "outputs": [
       {
         "internalType": "address",
@@ -358,12 +358,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_auzToken",
+        "name": "_ntzcToken",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "_auzWallet",
+        "name": "_ntzcWallet",
         "type": "address"
       },
       {

@@ -10,7 +10,7 @@ describe("Escrow tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const Token = await ethers.getContractFactory("AUZToken");
+    const Token = await ethers.getContractFactory("NTZCToken");
     const token = await upgrades.deployProxy(Token, [
       manager.address,
       manager.address,
@@ -205,7 +205,7 @@ describe("Escrow tests", function () {
     const access = await upgrades.deployProxy(Access, []);
     await access.deployed();
 
-    const Token = await ethers.getContractFactory("AUZToken");
+    const Token = await ethers.getContractFactory("NTZCToken");
     const token = await upgrades.deployProxy(Token, [
       manager.address,
       manager.address,

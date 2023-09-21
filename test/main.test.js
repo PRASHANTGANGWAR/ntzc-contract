@@ -13,7 +13,7 @@ describe("Token tests", function () {
   //   const access = await upgrades.deployProxy(Access, []);
   //   await access.deployed();
 
-  //   const AZX = await ethers.getContractFactory("AUZToken");
+  //   const AZX = await ethers.getContractFactory("NTZCToken");
   //   const azx = await upgrades.deployProxy(AZX, [
   //     admin.address,
   //     admin.address,

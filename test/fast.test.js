@@ -14,7 +14,7 @@
 //         const message = await escrow.registerProof(
 //         "0xb7ea346ad328dfa07c15bf516f4587ef232a7c3eb68d4aa77c26b7470bca9e7c",
 //         "637b53d2e2dd1e1c24b69141",
-//         ["https://auz-public-files-bucket.s3.eu-central-1.amazonaws.com/da0a9b26-51f4-41af-8538-ec9213f9c9ec-Make_Questions.jfif"],
+//         ["https://ntzc-public-files-bucket.s3.eu-central-1.amazonaws.com/da0a9b26-51f4-41af-8538-ec9213f9c9ec-Make_Questions.jfif"],
 //         "0x50bfC4c57319A6b50Cd9Aa75c34FDcefBacE2f41",
 //         "0xd31bBAf4c77750c6c79413cFf189315F93DD135e",
 //         "400000000",
@@ -30,7 +30,7 @@
 //       proof,
 //       "0xb7ea346ad328dfa07c15bf516f4587ef232a7c3eb68d4aa77c26b7470bca9e7c",
 //       "637b53d2e2dd1e1c24b69141",
-//       ["https://auz-public-files-bucket.s3.eu-central-1.amazonaws.com/da0a9b26-51f4-41af-8538-ec9213f9c9ec-Make_Questions.jfif"],
+//       ["https://ntzc-public-files-bucket.s3.eu-central-1.amazonaws.com/da0a9b26-51f4-41af-8538-ec9213f9c9ec-Make_Questions.jfif"],
 //       "0x50bfC4c57319A6b50Cd9Aa75c34FDcefBacE2f41",
 //       "0xd31bBAf4c77750c6c79413cFf189315F93DD135e",
 //       "400000000",

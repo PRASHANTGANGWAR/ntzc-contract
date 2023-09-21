@@ -19,7 +19,7 @@ async function main() {
   //   contract: "contracts/access/Access.sol:Access",
   // });
 
-  // const Token = await ethers.getContractFactory("AUZToken");
+  // const Token = await ethers.getContractFactory("NTZCToken");
   // const token = await upgrades.upgradeProxy("0x1994Fd475c4769138A6f834141DAEc362516497F", Token);
   // await token.deployed();
   // await waitBlocks(5);
@@ -30,7 +30,7 @@ async function main() {
   // console.log(`Token deployed to: ${token.address} => ${tokenImpl}`);
   // await run("verify:verify", {
   //   address: tokenImpl,
-  //   contract: "contracts/token/AUZToken.sol:AUZToken",
+  //   contract: "contracts/token/NTZCToken.sol:NTZCToken",
   // });
 
   // const HW = await ethers.getContractFactory("HotWallet");
@@ -85,7 +85,7 @@ main()
     process.exit(1);
   });
 
-// const azx = await ethers.getContractAt("AUZToken", "0x1994Fd475c4769138A6f834141DAEc362516497F");
+// const azx = await ethers.getContractAt("NTZCToken", "0x1994Fd475c4769138A6f834141DAEc362516497F");
 // const access = await ethers.getContractAt("Access", "0xf74Fa7226237c54Acb18211fb3b2FC62AAFF8fa9");
 
 // const Escrow = await ethers.getContractFactory("Escrow");
