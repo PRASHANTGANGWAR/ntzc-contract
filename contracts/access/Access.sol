@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -12,6 +12,13 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
     mapping(address => bool) public sendManagers; // Mapping of addresses who can send delegate trxs
     mapping(address => bool) public signManagers; // Mapping of addresses who can sign internal operations
     mapping(address => bool) public tradeDeskManagers; // Mapping of addresses of TradeDesk users
+
+    event SignatureValidated(address indexed signer, bytes32 token);
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
     receive() external payable {
         revert("Accsess: Contract cannot work with ETH");
@@ -34,10 +41,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param _manager The wallet of the user
      * @param _isManager Bool variable that indicates is wallet is manager or not
      */
-    function updateMinters(address _manager, bool _isManager)
-        external
-        onlyOwner
-    {
+    function updateMinters(
+        address _manager,
+        bool _isManager
+    ) external onlyOwner {
         require(_manager != address(0), "Access: Zero address is not allowed");
         minters[_manager] = _isManager;
     }
@@ -48,10 +55,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param _manager The wallet of the user
      * @param _isManager Bool variable that indicates is wallet is manager or not
      */
-    function updateSenders(address _manager, bool _isManager)
-        external
-        onlyOwner
-    {
+    function updateSenders(
+        address _manager,
+        bool _isManager
+    ) external onlyOwner {
         require(_manager != address(0), "Access: Zero address is not allowed");
         sendManagers[_manager] = _isManager;
     }
@@ -62,10 +69,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param _manager The wallet of the user
      * @param _isManager Bool variable that indicates is wallet is manager or not
      */
-    function updateSigners(address _manager, bool _isManager)
-        external
-        onlyOwner
-    {
+    function updateSigners(
+        address _manager,
+        bool _isManager
+    ) external onlyOwner {
         require(_manager != address(0), "Access: Zero address is not allowed");
         signManagers[_manager] = _isManager;
     }
@@ -76,10 +83,14 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param _user The wallet of the user
      * @param _isTradeDesk Bool variable that indicates is wallet is TradeDesk or not
      */
-    function updateTradeDeskUsers(address _user, bool _isTradeDesk)
-        external override
-    {
-        require(msg.sender == owner() || signValidationWhitelist[msg.sender], "Access: Only owner or sign manager can call");
+    function updateTradeDeskUsers(
+        address _user,
+        bool _isTradeDesk
+    ) external override {
+        require(
+            msg.sender == owner() || signValidationWhitelist[msg.sender],
+            "Access: Only owner or sign manager can call"
+        );
         require(_user != address(0), "Access: Zero address is not allowed");
         tradeDeskManagers[_user] = _isTradeDesk;
     }
@@ -90,10 +101,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param _contract The address of the contract
      * @param _canValidate Bool variable that indicates is address can use preAuthValidations
      */
-    function updateSignValidationWhitelist(address _contract, bool _canValidate)
-        external
-        onlyOwner
-    {
+    function updateSignValidationWhitelist(
+        address _contract,
+        bool _canValidate
+    ) external onlyOwner {
         require(_contract != address(0), "Access: Zero address is not allowed");
         signValidationWhitelist[_contract] = _canValidate;
     }
@@ -118,6 +129,8 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
         require(signer != address(0), "Access: Zero address not allowed");
         require(!tokenUsed[signer][token], "Access: Token already used");
         tokenUsed[signer][token] = true;
+
+        emit SignatureValidated(signer, token);
         return signer;
     }
 
@@ -162,11 +175,10 @@ contract Access is Initializable, OwnableUpgradeable, IAccess {
      * @param signature Signature
      * @return address Signer of message
      */
-    function getSigner(bytes32 message, bytes memory signature)
-        public
-        pure
-        returns (address)
-    {
+    function getSigner(
+        bytes32 message,
+        bytes memory signature
+    ) public pure returns (address) {
         message = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(message, signature);
         return signer;

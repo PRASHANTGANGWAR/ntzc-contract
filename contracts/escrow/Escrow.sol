@@ -1,10 +1,11 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../lib/TransferHelper.sol";
 import "../access/IAccess.sol";
 
-contract Escrow is Initializable {
+contract Escrow is Initializable, ReentrancyGuardUpgradeable {
     // The counter of trades
     uint256 public tradesCounter;
     // Address of AZK token
@@ -61,6 +62,8 @@ contract Escrow is Initializable {
         bool result,
         string reason
     );
+    event FeeWalletChanged(address wallet);
+    event TradeDeskChanged(address user, bool isTradeDesk);
 
     modifier onlyOwner() {
         require(
@@ -78,12 +81,9 @@ contract Escrow is Initializable {
         _;
     }
 
-    modifier onlyTradeDesk() {
-        require(
-            IAccess(accessControl).isTradeDesk(msg.sender),
-            "Escrow: Only TradeDesk is allowed"
-        );
-        _;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
     receive() external payable {
@@ -100,6 +100,7 @@ contract Escrow is Initializable {
         address _auzWallet,
         address _access
     ) public initializer {
+        __ReentrancyGuard_init();
         accessControl = _access;
         azx = _auzToken;
         auzWallet = _auzWallet;
@@ -112,6 +113,8 @@ contract Escrow is Initializable {
     function changeWallet(address _wallet) external onlyOwner {
         require(_wallet != address(0), "Escrow: Zero address is not allowed");
         auzWallet = _wallet;
+
+        emit FeeWalletChanged(_wallet);
     }
 
     /**
@@ -162,6 +165,8 @@ contract Escrow is Initializable {
             "Escrow: Signer is not manager"
         );
         IAccess(accessControl).updateTradeDeskUsers(user, isTradeDesk);
+
+        emit TradeDeskChanged(user, isTradeDesk);
     }
 
     /**
@@ -344,7 +349,7 @@ contract Escrow is Initializable {
         string memory _tradeId,
         string[] memory _links,
         address _buyer
-    ) external onlyManager {
+    ) external onlyManager nonReentrant {
         require(tradesIdsToTrades[_tradeId] != 0, "Escrow: Trade is not exist");
         Trade storage trade = trades[tradesIdsToTrades[_tradeId]];
         require(trade.valid, "Escrow: Trade is not valid");
@@ -592,7 +597,9 @@ contract Escrow is Initializable {
      * @dev Gets trade by external trade id
      * @param _tradeId External trade id
      */
-    function getTrade(string memory _tradeId)
+    function getTrade(
+        string memory _tradeId
+    )
         external
         view
         returns (

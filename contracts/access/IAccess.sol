@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 interface IAccess {
     function isMinter(address _manager) external view returns (bool);

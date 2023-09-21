@@ -47,7 +47,7 @@ async function main() {
   //   contract: "contracts/hotwallet/HotWallet.sol:HotWallet",
   // });
 
-  const Escrow = await ethers.getContractFactory("Escrow");
+  // const Escrow = await ethers.getContractFactory("Escrow");
   // await upgrades.forceImport(
   //   "0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC",
   //   Escrow
@@ -61,10 +61,10 @@ async function main() {
   // await waitBlocks(5);
   // const escrowImpl = await getImplementationAddress(ethers.provider, escrow.address);
   // console.log(`Escrow deployed to: ${escrow.address} => ${escrowImpl}`);
-  await run("verify:verify", {
-    address: "0x02cd7d521F0322e4420b7D56F7e4A86aB791A51c",
-    contract: "contracts/escrow/Escrow.sol:Escrow",
-  });
+  // await run("verify:verify", {
+  //   address: "0x02cd7d521F0322e4420b7D56F7e4A86aB791A51c",
+  //   contract: "contracts/escrow/Escrow.sol:Escrow",
+  // });
 
   // const back = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
   // const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";

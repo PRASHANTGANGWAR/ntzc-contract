@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -42,6 +42,8 @@ contract HotWallet is Initializable {
         uint256 amount
     );
     event SaleRequestProcessed(address admin, bytes32 saleId, bool isApproved);
+    event BuyLimitUpdates(uint256 newLimit);
+    event TokensWithdrawed(address token, address to, uint256 amount);
 
     modifier onlyOwner() {
         require(
@@ -59,10 +61,15 @@ contract HotWallet is Initializable {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address _azx, address _access) external initializer {
         accessControl = _access;
         azx = _azx;
-        BUY_LIMIT = 5000 * 10**8;
+        BUY_LIMIT = 5000 * 10 ** 8;
     }
 
     /**
@@ -84,6 +91,8 @@ contract HotWallet is Initializable {
      */
     function updateBuyLimit(uint256 _limit) external onlyOwner {
         BUY_LIMIT = _limit;
+
+        emit BuyLimitUpdates(_limit);
     }
 
     /**
@@ -100,6 +109,8 @@ contract HotWallet is Initializable {
     ) external onlyOwner {
         require(_to != address(0), "HotWallet: zero address is not allowed");
         IERC20(_token).transfer(_to, _amount);
+
+        emit TokensWithdrawed(_token, _to, _amount);
     }
 
     /**
@@ -196,7 +207,10 @@ contract HotWallet is Initializable {
         require(seller == signer, "HotWallet: Signer is not seller");
         IERC20(azx).transferFrom(seller, msg.sender, networkFee);
         IERC20(azx).transferFrom(seller, address(this), amount);
-        require(saleRequests[saleId].seller == address(0), "HotWallet: saleId already exists");
+        require(
+            saleRequests[saleId].seller == address(0),
+            "HotWallet: saleId already exists"
+        );
         saleRequests[saleId] = SaleRequest(
             saleId,
             signer,
