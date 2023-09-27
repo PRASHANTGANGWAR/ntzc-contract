@@ -379,7 +379,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
         string memory tradeId,
         string[] memory links,
         address buyer
-    ) external onlyManager {
+    ) external nonReentrant onlyManager {
         require(
             tradesIdsToTrades[tradeId] != 0,
             "Escrow: Trade does not exist"
@@ -434,7 +434,7 @@ contract Escrow is Initializable, ReentrancyGuardUpgradeable {
         string[] memory links,
         bool result,
         string memory reason
-    ) external {
+    ) external nonReentrant {
         require(
             tradesIdsToTrades[tradeId] != 0,
             "Escrow: Trade does not exist"
