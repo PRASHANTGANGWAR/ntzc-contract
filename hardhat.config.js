@@ -37,6 +37,12 @@ module.exports = {
         // url: "https://data-seed-prebsc-1-s3.binance.org:8545/",
       }
     },
+    main: {
+      url: process.env.ETH_FORK_URL,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      chainId: 1,
+      gasPrice: 15 * 1e9,
+    },
     mumbai: {
       url: "https://polygon-mumbai.g.alchemy.com/v2/X_rE2rXvvnQsiy0of3GMn11QS7r9sPla",
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
