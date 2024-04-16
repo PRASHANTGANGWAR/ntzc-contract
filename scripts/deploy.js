@@ -7,10 +7,10 @@ async function main() {
   const admin = signers[0];
 
   const backend = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
-  const signer = "0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
+  const signer = "0xaEB3Aaaf2E2A399383Cd45AF9570B3c1Ed7e7b04"//"0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
   const signer2 = "0x3ddD16e693E7c7251d64d9ad36506cBDf2268D55";
 
-  // Access deployed to: 0xf74Fa7226237c54Acb18211fb3b2FC62AAFF8fa9 => 0x5D27E3f348948522B72B2d4056Ad1C0E86133b96
+  // Access deployed to: 0x01357a26Aa7624F887a905C44343fab25c4d2df7 => 0xe829db6Ea8fEB1eE3fA6D6dd5C22022CB4e82001
   const Access = await ethers.getContractFactory("Access");
   const access = await upgrades.deployProxy(Access, []);
   await access.deployed();
@@ -24,12 +24,11 @@ async function main() {
     address: accessImpl,
     contract: "contracts/access/Access.sol:Access",
   });
-
-  // AZX deployed to: 0x1994Fd475c4769138A6f834141DAEc362516497F => 0x8FB9c7724B79E4b93490B4Bb2e76b13A478249AA
+  // AZX deployed to: 0x98247069345999Ff7069024276535CdF2050135d => 0x3acbdf1F0751D466756961cd5d525881f7880b28
   const AZX = await ethers.getContractFactory("NTZCToken");
   const azx = await upgrades.deployProxy(AZX, [
     admin.address,
-    "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
+    "0x4f1AF681d21affec44Bff5Bf5c871f15Ff516DBf",
     access.address,
   ]);
   await azx.deployed();
@@ -41,7 +40,7 @@ async function main() {
     contract: "contracts/token/NTZCToken.sol:NTZCToken",
   });
 
-  // HotWallet deployed to: 0x5CdE1b89f757eDdA8f149d6d63C7dE764C83d498 => 0x18807080950A9e034c46fBCEFc952F5D115B4C7C
+  // HotWallet deployed to: 0x3b1B143D8191A195f0E8c8800289b5388C736885 => 0x95E7643D7Ae995D70502C5Ea74f18553cfd209a2
   const HW = await ethers.getContractFactory("HotWallet");
   const hw = await upgrades.deployProxy(HW, [azx.address, access.address]);
   await hw.deployed();
@@ -53,11 +52,11 @@ async function main() {
     contract: "contracts/hotwallet/HotWallet.sol:HotWallet",
   });
 
-  // Escrow deployed to: 0xBc3868C72D66961C09b21108a4fcd51f1f0B5ceC => 0x02cd7d521F0322e4420b7D56F7e4A86aB791A51c
+  // Escrow deployed to: 0x36e186BC20a7b21370e27F688D59B67268AA195c => 0x33C710ca66Dbb499A0fEC4dac1218f04b1Cc7814
   const Escrow = await ethers.getContractFactory("Escrow");
   const escrow = await upgrades.deployProxy(Escrow, [
     azx.address,
-    "0xccd8b289CE99fFbB8E7e1CF5e8a7c81DBd25Fed2",
+    "0x4f1AF681d21affec44Bff5Bf5c871f15Ff516DBf",
     access.address,
   ]);
   await escrow.deployed();
@@ -110,10 +109,10 @@ async function main() {
     ]);
   }
   await waitBlocks(5);
-  await azx.transfer(hw.address, BigInt(100000 * 1e8));
+  await azx.transfer(hw.address, BigInt(100000 * 1e8),  { gasLimit: 2000000 } );
   await azx.transfer(
-    "0xBF758171658F88B53206cf0fF23DB805C8d3304F",
-    BigInt(5000 * 1e8)
+   "0x4f1AF681d21affec44Bff5Bf5c871f15Ff516DBf",
+    BigInt(5000 * 1e8),  { gasLimit: 2000000 }
   );
 
   console.log("DONE!");
