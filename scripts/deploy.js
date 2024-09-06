@@ -7,7 +7,7 @@ async function main() {
   const admin = signers[0];
 
   const backend = "0xae30fc5f42d7d8c7e8cbe5ad19620e87fb825735";
-  const signer = "0xaEB3Aaaf2E2A399383Cd45AF9570B3c1Ed7e7b04"//"0xd31bBAf4c77750c6c79413cFf189315F93DD135e";
+  const signer = "0xaEB3Aaaf2E2A399383Cd45AF9570B3c1Ed7e7b04";
   const signer2 = "0x3ddD16e693E7c7251d64d9ad36506cBDf2268D55";
 
   // Access deployed to: 0x01357a26Aa7624F887a905C44343fab25c4d2df7 => 0xe829db6Ea8fEB1eE3fA6D6dd5C22022CB4e82001
